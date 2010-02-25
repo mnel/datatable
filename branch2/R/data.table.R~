@@ -177,7 +177,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 #	}
 #}
 
-"[.data.table" = function (x, i, j, by, with=TRUE, nomatch=NA, mult="first", roll=FALSE, rolltolast=FALSE, simplify=TRUE, which=FALSE, incbycols=!bysameorder, bysameorder=FALSE, verbose=getOption("datatable.verbose",FALSE))
+"[.data.table" = function (x, i, j, by=NULL, with=TRUE, nomatch=NA, mult="first", roll=FALSE, rolltolast=FALSE, simplify=TRUE, which=FALSE, incbycols=!bysameorder, bysameorder=FALSE, byretn=NULL, verbose=getOption("datatable.verbose",FALSE))
 {
   # TODO: DT[i,"colA"] will return a one-column data.table. To get a vector do DT[i,"colA"][[1]].  Neater than DT[i,"colA",drop=TRUE]. Instead of DT[,"colA"][[1]], just do DT$colA, if there is no subset i required.
   # TODO: So drop=FALSE is always implicitly the case.  Its nice for joins to simply say RT[LT[,"val"]] for example.
@@ -342,6 +342,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         bysplit = as.list(as.list(parse(text=paste("c(",by,")",sep="")))[[1]])[-1]
         for (jj in bysplit) if (!with(x, storage.mode(eval(jj)))%in%c("integer","character","logical")) stop("by expression '",deparse(jj),"' is not integer or character") # numeric, even when appearing to be integer, cause uniqueness problems due to numerical precision.
         by = paste(bysplit,collapse=",")        # in simple cases of comma seperated column names, by ends up the same.  With named arguments in the 'by', the names are discarded by this.
+				# can't the above type checks be done after evaluation ??
 
         if (length(bysplit)<=length(attr(x,"sorted")) && identical(as.character(bysplit),head(attr(x,"sorted"),length(bysplit)))) {
         	# table is already sorted by the group criteria.
@@ -431,20 +432,50 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
       # we used to allow functions such as head, or last, but other easier ways to do that, so no longer available here to keep things simple.
 ##    ans = with(x, {eval(cp__); lapply(1:length(f__),function(g__)eval(e__))})
 
-			biggest = max(len__)
-			.SD = x[1:biggest, vars, with=FALSE]   # single object we will re-use when grouping, for only the columns the j needs.
+			biggest = which.max(len__)
+			.SD = x[seq(len__[biggest]), vars, with=FALSE]   # single object we will re-use when grouping, for only the columns the j needs.
 			xcols = as.integer(match(vars,colnames(x)))
 			#browser()
-			for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) levels(.SD[[col]]) = levels(x[[xcols[col]]])  # careful not to use i as counter here, for() leaves i set to last value.
+			# no longer required as internal [.factor is gone so unused levels are kept in ....for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) levels(.SD[[col]]) = levels(x[[xcols[col]]])  # careful not to use i as counter here, for() leaves i set to last value.
       if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
       # ans = with(x, {eval(cp__); eval(parse(text = paste("lapply(1:length(f__),function(g__) {", e__, "})")))})
 			# browser()
-			ans = .Call("dogroups",x,.SD,xcols,o__,f__,len__,je,new.env(parent=parent.frame()),PACKAGE="data.table")
-			# browser()
+			if (missing(byretn) || byretn=="fixed") {
+			  # byretn is all about trying to allocate the right amount of memory for the result, first time. Then there
+			  # will be no need to grow it as the 'by' proceeds, or use memory for a temporary list of the results.
+  			itestj = seq(f__[biggest],length=len__[biggest])  # we use the biggest group to test properties of j
+			  if (length(o__)) itestj = o__[itestj] 
+  			testj = with(x[itestj, vars, with=FALSE], eval(je))
+  			if (!is.null(testj) && !is.list(testj)) stop("j doesn't evaluate to NULL, so it must then evaluate to list")  # single names are automatically detected and wrapped with list() earlier.
+  			maxn = if (is.null(testj)) 0 else max(sapply(testj,length))   # the max could be 0 too
+  			if (maxn==0) stop("byretn was missing or 'fixed' so I ran j on the largest group, to determine how many rows to allocate for the result, but j returned no rows. If you are using 'by' for the side effects only of j (e.g. plotting) then please rerun with byretn=0. Or change j so it always returns some rows (one row of aggregate data is the norm). Or if this is correct, and other groups may return data then set byretn to 'ngroup'") # there has to be recall required here since the user won't want the biggest group plotted first, and then repeated later
+  		}
+  		if (missing(byretn)) {
+			  byretn = if (maxn==1) length(f__)   # Most common case 1 : j is a list of simple aggregates i.e. list of atoms only
+                 else if (maxn==length(itestj)) sum(len__)  # Most common case 2 : j returns as many rows as there are in the group (maybe a join)
+                 else sum(len__)  # we might over allocate here, and if so user will be warned and setting 'byretn' to 'fixed' or a numer may be more efficient.
+        # else if (maxn>length(itestj)) stop("I have run j on the largest group (",length(itestj)," rows) but j returned a list in which one or more vectors was longer than that (",maxn,"). If this is really correct, please set the 'byretn' argument appropriately and run again. See FAQs.")
+        # else stop("I have run j on the largest group (",length(itestj)," rows) but j returned a list in which one or more vectors are length ",maxn,"). If this is really correct, please set the 'byretn' argument to either 'fixed' or 'ngroup' and run again. See FAQs.")
+      } else {
+        if (length(byretn)!=1) stop("byretn is not length 1, it is length ",length(byretn))
+        if (is.character(byretn)) {
+          byretn = switch(byretn, "fixed"=maxn*length(f__), "ngroup"=sum(len__), stop("When byret is supplied it must be either 'fixed' or 'ngroup'"))
+          # 'fixed' : say if 2 rows are returned per group e.g. beta and tstat if user prefers them as rows rather than cols
+          # 'ngroup' : up to as many rows in each group, but maybe 
+        }
+      }
+      byretn = as.integer(byretn)
+      # At this point byretn is either a best guess, or user supplied.  We may still allocate more rows inside dogroups if it isn't large enough but most of the time we'll get it right first time.
+			browser()
+			ans = .Call("dogroups",x,.SD,xcols,o__,f__,len__,je,new.env(parent=parent.frame()),testj,byretn,PACKAGE="data.table")
+			browser()
 			# to do, play with hash and size arguments of the new.env().
 			# TO DO : cope with different ordering
 			# TO DO : write directly to table output
     	if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+    	
+    	names(ans) = jvnames
+    	class(ans) = "data.table"
       #}
       # TO DO: port this into C, ignoring names etc
       # TO DO: add the following lines into the C (too slow up here in R) :
@@ -452,61 +483,64 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
       #  last.printed = grouping.started.at[3]
       #  if (proc.time()[3] > last.printed + 10) {cat("  ",percent(g,length(f))," groups done in ",time.taken(grouping.started.at),"    \r",sep="");last.printed=proc.time()[3]}
       #  if (1 || verbose || last.printed > grouping.started.at[3]) cat(" ",percent(length(f),length(f))," groups done in ",time.taken(grouping.started.at),"    \n",sep="")
-      if (simplify) {
-				if (verbose) {last.started.at = proc.time()[3];cat("Starting simplify ... "); flush.console()}
-        tt = sapply(ans,is.null)        # TO DO : add test case for first null 'by'
-        if (all(tt)) return(data.table(NULL))
-        first.non.null = fnn = which.first(!tt)
-        if (is.null(dim(ans[[fnn]]))) {
-        	if (!is.list(ans[[fnn]])) {
-        		r = sapply(ans,NROW)
-            ans = data.table(do.call("c",ans)) #,use.names=FALSE))     # most usually the vector result of sum(<colA>) or similar. We always return a data.table from a data.table subset, so we always know where we are, and don't need to test the result for single case. Unless each j returns a matrix in which case we rbind the matrices together below.
-        	} else {
-        		r = sapply(ans,function(l)length(l[[1]]))     # we assume each list item is the same length
-        	  l = lapply(1:length(ans[[1]]), function(l) do.call("c",lapply(ans,"[[",l)))
-            # the above is not too bad speed wise.  This is why j=list(...) is quicker than j=data.table(...)
-            names(l) = jvnames
-            ans = data.table(l)
-          }
-        } else {
-        	r = sapply(ans,NROW)
-          ans = do.call("rbind",ans)        # TO DO: use a list in each group rather than the full data.table. All the c.factor will slow down.
-        }
-        if (!incbycols) {
-        	if (NROW(ans) < nrow(x)) warning("incbycols=FALSE but result is not the same length as the table")
-          else if (!bysameorder) warning("incbycols=FALSE but by is not by the table order")
-          # These warning should not be ignored lightly.
-        }
-        if (incbycols) {
-        	if (any(r>1)) f__ = rep(f__,times=r)
-        	if (missing(by)) bysplit = iby  # only occurs when mult="all" and by is missing.
-        	if (!bysameorder) f__=o__[f__]
-          tt = paste("(",as.character(bysplit),")[f__]",sep="")
-          re = "^[a-zA-Z]+[a-zA-Z0-9_]*$"  # copied from data.table(). Should have global variable in one place ideally.
-          bynames = as.character(bysplit)
-          if (!is.null(names(bysplit))) {
-        		xx = names(bysplit)!=""
-            bynames[xx] = names(bysplit)[xx]
-        	}
-          bynames[regexpr(re, bynames) < 1] = ""  # when unnamed expressions are passed into by, this line blanks off the line since / * etc are not allowed in column names.
-          havenames = bynames != ""
-          if (any(havenames)) tt[havenames] = paste( bynames[havenames],"=",tt[havenames],sep="")
-          # because we appended the "[f__]" above, data.table() will no longer be able to deduce the column name so we need to append the "<colname>="
-          tt = paste(tt,collapse=",")
-          e__ = parse(text=paste("data.table(",tt,")",sep=""))
-          grps = with(x, eval(e__))
-          key = if ((!missing(by) && bysameorder) || (!missing(i) && !is.null(attr(i,"sorted")))) paste(names(grps),collapse=",") else NULL
-          # either a spliced join, likely i was SJ() or a table already with a key,  or a by to the key columns in order
-          ans = data.table(grps, ans, key=key)
-		    	if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
-        }
-				for (s in seq_len(ncol(ans))) if (is.factor(ans[[s]])) ans[[s]] = factor(ans[[s]])  # drop unused levels
-      } else {
+      
+      #if (simplify) {
+			#	if (verbose) {last.started.at = proc.time()[3];cat("Starting simplify ... "); flush.console()}
+      #  tt = sapply(ans,is.null)        # TO DO : add test case for first null 'by'
+      #  if (all(tt)) return(data.table(NULL))
+      #  first.non.null = fnn = which.first(!tt)
+      #  if (is.null(dim(ans[[fnn]]))) {
+      #  	if (!is.list(ans[[fnn]])) {
+      #  		r = sapply(ans,NROW)
+      #      # ans = data.table(do.call("c",ans)) #,use.names=FALSE))     # most usually the vector result of sum(<colA>) or similar. We always return a data.table from a data.table subset, so we always know where we are, and don't need to test the result for single case. Unless each j returns a matrix in which case we rbind the matrices together below.
+			#			ans = data.table(unlist(ans,use.names=FALSE)) 
+      #  	} else {
+      #  		r = sapply(ans,function(l)length(l[[1]]))     # we assume each list item is the same length
+      #  	  # l = lapply(1:length(ans[[1]]), function(l) do.call("c",lapply(ans,"[[",l)))
+			#			l = lapply(1:length(ans[[1]]), function(l) unlist(lapply(ans,"[[",l)))
+      #      # the above is not too bad speed wise.  This is why j=list(...) is quicker than j=data.table(...)
+      #      names(l) = jvnames
+      #      ans = data.table(l)
+      #    }
+      #  } else {
+      #  	r = sapply(ans,NROW)
+      #    ans = do.call("rbind",ans)        # TO DO: use a list in each group rather than the full data.table. All the c.factor will slow down.
+      #  }
+      #  if (!incbycols) {
+      #  	if (NROW(ans) < nrow(x)) warning("incbycols=FALSE but result is not the same length as the table")
+      #    else if (!bysameorder) warning("incbycols=FALSE but by is not by the table order")
+      #    # These warning should not be ignored lightly.
+      #  }
+      if (FALSE) {  # incbycols) {
+       	if (any(r>1)) f__ = rep(f__,times=r)
+       	if (missing(by)) bysplit = iby  # only occurs when mult="all" and by is missing.
+       	if (!bysameorder) f__=o__[f__]
+         tt = paste("(",as.character(bysplit),")[f__]",sep="")
+         re = "^[a-zA-Z]+[a-zA-Z0-9_]*$"  # copied from data.table(). Should have global variable in one place ideally.
+         bynames = as.character(bysplit)
+         if (!is.null(names(bysplit))) {
+       		xx = names(bysplit)!=""
+          bynames[xx] = names(bysplit)[xx]
+       	}
+        bynames[regexpr(re, bynames) < 1] = ""  # when unnamed expressions are passed into by, this line blanks off the line since / * etc are not allowed in column names.
+        havenames = bynames != ""
+        if (any(havenames)) tt[havenames] = paste( bynames[havenames],"=",tt[havenames],sep="")
+        # because we appended the "[f__]" above, data.table() will no longer be able to deduce the column name so we need to append the "<colname>="
+        tt = paste(tt,collapse=",")
+        e__ = parse(text=paste("data.table(",tt,")",sep=""))
+        grps = with(x, eval(e__))
+        key = if ((!missing(by) && bysameorder) || (!missing(i) && !is.null(attr(i,"sorted")))) paste(names(grps),collapse=",") else NULL
+        # either a spliced join, likely i was SJ() or a table already with a key,  or a by to the key columns in order
+        ans = data.table(grps, ans, key=key)
+		  	if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+      }
+			for (s in seq_len(ncol(ans))) if (is.factor(ans[[s]])) ans[[s]] = factor(ans[[s]])  # drop unused levels
+      #} else {
 				# simplify == FALSE
         # Set FALSE when for example if you apply lchg per id, where all ids have the same number of dates. Then do unlist afterwards.
         # Could leave it in this format by default to save 'by'ing all the time.  So a table could look like the unique keys then just the first part of the vector printed out.
         # TO DO: Return a key'd list.
-      }			
+      #}			
       return(ans)
 			##
 			## End of grouping
@@ -937,9 +971,9 @@ rbind.data.table = function (...) {
     if (length(nm) && n>1) {
         for (i in 2:n) if (length(names(allargs[[i]])) && !all(names(allargs[[i]]) == nm)) warning("colnames of argument ",i," don't match colnames of argument 1")
     }
-    #for (i in 1:length(allargs[[1]])) l[[i]] = unlist(lapply(allargs, "[[", i))
-    for (i in 1:length(allargs[[1]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
-    # Changed from unlist to do.call("c",...) so that c.factor is called on factor columns
+    for (i in 1:length(allargs[[1]])) l[[i]] = unlist(lapply(allargs, "[[", i))
+    # for (i in 1:length(allargs[[1]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
+    # Used to be do.call("c",...) so that c.factor was called on factor columns. No longer.
     names(l) = nm
     class(l) = "data.table"
     return(l)
