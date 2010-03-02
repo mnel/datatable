@@ -6,6 +6,7 @@ setkey = function(x, ..., loc=parent.frame(), alternative = FALSE)
     # thought about requiring caller to pass in as.ref() but figured neater to do it inside here.
     # TO DO: allow secondary index, which stores the sorted key + a column of integer rows in the primary sorted table. Interesting when it comes to table updates to maintain the keys.
     # TO DO: if key is already set, don't reset it.
+    # TO DO: remove use of ref
     require(ref)
     if (alternative)
         name = x
@@ -26,34 +27,62 @@ setkey = function(x, ..., loc=parent.frame(), alternative = FALSE)
         miss = !(cols %in% colnames(deref(x)))
         if (any(miss)) stop("some columns are not in the table: " %+% cols[miss])
     }
-    if (!all( sapply(deref(x),storage.mode)[cols] %in% "integer")) stop("All keyed columns must be storage mode integer")
-		# if (any( sapply(deref(x),is.factor)[cols])) stop("A keyed column must not be factor")  # factors are is.atomic(), otherwise could test for that
-    o = eval(parse(text=paste("deref(x)[,fastorder(",paste(cols,collapse=","),",na.last=FALSE)]",sep="")))
+    if (!all( sapply(deref(x),storage.mode)[cols] == "integer")) stop("All keyed columns must be storage mode integer")
+    o = fastorder(deref(x), cols, na.last=FALSE)
+    # o = eval(parse(text=paste("deref(x)[,fastorder(",paste(cols,collapse=","),",na.last=FALSE)]",sep="")))
     # We put NAs first because NA is internally a very large negative number. This is relied on in the C binary search.
     deref(x) = deref(x)[o]
     attr(deref(x),"sorted") = cols
     invisible()
 }
 
-fastorder <- function(..., na.last = FALSE, decreasing = FALSE, verbose=getOption("datatable.verbose",FALSE)) {
-    cols <- list(...)
-    err <- try(silent = TRUE, {
-        # Use a radix sort (fast and stable), but it will fail if there are more than 1e5 unique elements.
-        o <- sort.list(cols[[length(cols)]], na.last = na.last, method = 'radix', decreasing = decreasing)
-        # If there is more than one column, run through them back to front to group columns.
-        # The unclass(col) is so we don't try to mess with factors (factor sorting slows things down).
-        if (length(cols) > 1)
-            for (col in rev(take(cols)))
-                o <- o[sort.list(unclass(col)[o], na.last = na.last, method = "radix", decreasing = decreasing)]
-    })
-    if (inherits(err, "try-error")) {
-				if (verbose) {
-					errtxt = gsub("^[ ]+","",strsplit(err,split="\n")[[1]][2])
-					cat("Radix error: ",errtxt,". Running order now ...",sep="");flush.console()
-				}
-        o <- order(..., na.last = na.last, decreasing = decreasing)
-				if (verbose) {cat("done\n");flush.console()}
-	  }
+radixorder1 <- function(x, na.last = FALSE, decreasing = FALSE) {
+    if(!typeof(x) == "integer") # do want to allow factors here, where we assume the levels are sorted as we always do in data.table
+        stop("radixorder1 is only for integer 'x'")
+    if(is.na(na.last))
+        return(.Internal(radixsort(x, TRUE, decreasing))[seq_len(sum(!is.na(x)))])
+        # this is a work around for what we consider a bug in sort.list on vectors with NA (inconsistent with order)
+    else
+        return(.Internal(radixsort(x, na.last, decreasing)))
+}
+
+regularorder1 <- function(x, na.last = FALSE, decreasing = FALSE) {
+    if(is.na(na.last))
+        return(.Internal(order(TRUE, decreasing, x))[seq_len(sum(!is.na(x)))])
+    else
+        return(.Internal(order(na.last, decreasing, x)))
+}
+
+
+fastorder <- function(lst, which=seq_along(lst), na.last = FALSE, decreasing = FALSE, verbose=getOption("datatable.verbose",FALSE))
+{
+    # lst is a list or anything thats stored as a list and can be accessed with [[.
+    # 'which' may be integers or names
+    # Its easier to pass arguments around this way, and we know for sure that [[ doesn't take a copy but l=list(...) might do.
+    printdone=FALSE
+    if (all(sapply(lst,storage.mode)=="integer")) {    # if we have a lot of columns then faster to test all are integer first (quick) before starting to call radix
+        err <- try(silent = TRUE, {
+            # Use a radix sort (fast and stable), but it will fail if there are more than 1e5 unique elements (or any negatives)
+            o <- radixorder1(lst[[last(which)]], na.last = na.last, decreasing = decreasing)
+            # If there is more than one column, run through them back to front to group columns.
+            # The unclass(col) is so we don't try to mess with factors (factor sorting slows things down).
+            # TO DO: can we avoid the unclass (which takes a copy?) by passing o into the radixorder rather than copying (again) via the [o]
+            if (length(which) > 1)
+                for (w in rev(take(which)))
+                    o <- o[radixorder1(unclass(lst[[w]])[o], na.last = na.last, decreasing = decreasing)]                    
+        })
+        if (!inherits(err, "try-error")) return(o)
+        if (verbose) {
+            errtxt = gsub("^[ ]+","",strsplit(err,split="\n")[[1]][2])
+            cat("Radix error: ",errtxt,". Running order now ...",sep="");flush.console()
+            printdone=TRUE
+        }
+    }
+    o <- regularorder1(lst[[last(which)]], na.last = na.last, decreasing = decreasing)
+    if (length(which) > 1)
+        for (w in rev(take(which)))
+            o <- o[regularorder1(unclass(lst[[w]])[o], na.last = na.last, decreasing = decreasing)]    
+    if (printdone) {cat("done\n");flush.console()}   # TO DO - add time taken
     o
 }
 

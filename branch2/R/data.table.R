@@ -247,7 +247,9 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
            	if ((roll || rolltolast) && a==length(leftcols)) stop("Attempting roll join on factor column i.",colnames(i)[lc],". Only integer columns (i.e. not factors) may be roll joined.")   # because the sortedmatch a few lines below returns NA for missing chars in x (rather than some integer greater than existing). Using character rather than factor solves this if we get over the speed issues with character.
             if (!is.factor(x[[rc]])) stop("i.",colnames(i)[lc]," is a factor joining to x.",colnames(x)[rc]," which is not a factor. Factors must join to factors.")
             i[[lc]] = sortedmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA)[i[[lc]]]
-            # since factor levels are always sorted,  this match will be sorted too. There is no need to re-sort.
+            levels(i[[lc]]) = levels(x[[rc]])
+            class(i[[lc]]) = "factor"
+            # factor levels are always sorted in data.table, so this match will be sorted too. There is no need to re-sort.
             # NAs can be produced by this level match, in which case the C code (it knows integer value NA) can skip over the lookup.
             # its therefore important we pass NA rather than 0 to the C code.
             # For factor levels in the order of several thousand, standard match is extremely innefficient, sortedmatch yields a 96% saving.
@@ -267,6 +269,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
       			if ((roll || rolltolast) && lc==last(leftcols)) stop("Attempting roll join on factor column i.",colnames(i)[lc],". Only integer columns (i.e. not factors) may be roll joined.")
        			if (!is.factor(x[[rc]])) stop("i.",colnames(i)[lc]," is a factor but the corresponding x.",colnames(x)[rc]," is not a factor, Factors must join to factors.")
            	i[[lc]] = sortedmatch(levels(i[[lc]]), levels(x[[rc]]), nomatch=NA)[i[[lc]]]
+           	levels(i[[lc]]) = levels(x[[rc]])  # We need the x levels later, in the byval, to transfer to result
+           	class(i[[lc]]) = "factor"
           } else {
            	if (is.factor(x[[rc]])) stop("x.",colnames(x)[rc]," is a factor but joining to i.",colnames(i)[lc]," which is not a factor. Factors must join to factors.")
           }
@@ -313,11 +317,11 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         f__ = idx.start
         len__ = as.integer(idx.end-idx.start+1)
         len__ = len__[f__>0]
+        byval = i[f__>0]  # the levels on x trickle through to byval here, via the trickle above where i factors are mapped to x factors.
+        names(byval) = iby  # the names of the group columns come from x since those are the cols we're joining to.  inci argument might later include i columns as they are.
         f__ = f__[f__>0]
-        bysameorder = TRUE  # think of a mult='all' as by'ing by the join. Setting 'bysameorder' now is more of a fudge to avoid the o__[f__] later.
+        bysameorder = haskey(i) #TRUE  # think of a mult='all' as by'ing by the join. Setting 'bysameorder' now is more of a fudge to avoid the o__[f__] later.
         if (!is.data.table(i)) stop("logicial error. i is not data.table, but mult='all' and 'by' is missing")
-        byval = i
-        # TO DO : get the by col names from x !
         
         # groups = mapply(seq, idx.start, idx.end, SIMPLIFY=FALSE)
         # we will 'by' by the join to multiple.  In other words, 'by' the columns in the i table
@@ -336,39 +340,44 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         # by is not missing at this point, and mult may be any value ("all", "first" or "last")
         # Find the groups, using by ...
         bysub = substitute(by)
-        if (mode(bysub)=="name") {
-				  # j is a single unquoted column name
-				  bysub = parse(text=paste("list(",bysub,")",sep=""))[[1]]
-  			}
-			  browser()  # test for character by here !
-        if (is.character(by)) {
-          if (length(by)!=1) stop("when by is character it must be a vector length 1 containing comma seperated columns or expressions. Soon to be deprecated in factor of passing a list() to by.")
-          bysub = parse(text=paste("list(",by,")",sep=""))
-          # Note that 'by' may be a variable in the calling frame which evaluates to the character string to group by. Therefore, do not test for mode(substitute(by)=="character").
-          # The by expression also see variables in the calling frame, just like j.
-        } else {
-          bysub = substitute(by)
+        if (mode(bysub) %in% c("name","character")) {
+			# name : j may be a single unquoted column name but it must evaluate to list so this is a convenience to users
+			# character: for backwards compatibility with v1.2 e.g. by="colA,colB,colC%%100". May deprecate this in futute.
+            bysub = parse(text=paste("list(",bysub,")",sep=""))[[1]]
+  		}
+        # The by expression also see variables in the calling frame, just like j.
+        # Note that 'by' may be a variable in the calling frame if for example several groupings are
+        # required with the same long and complicated 'by' but different j.  This used to be a character
+        # vector length one,  but from v1.3 is e.g. bycriteria = quote(list(colA,colB%%100)); DT[...,by=bycriteria]
+        
+        byvars = all.vars(bysub)   # not a perfect test but works most of the time
+        if (missing(bysameorder) && length(byvars) <= length(getkey(x)) && identical(byvars,head(getkey(x),length(byvars)))) {
+            bysameorder=TRUE
+            # table is already sorted by the group criteria, no need to sort
+            # fastorder is so fast though that maybe this is not worth worrying about, especially if fastorder is even faster if its already sorted.
+            # TO DO: turn off bysameorder, and always call fastorder ?
+            # TO DO++: hash the key so sorting never required (hence shash query to r-devel)
         }
-
-        # if (length(bysplit)<=length(attr(x,"sorted")) && identical(as.character(bysplit),head(attr(x,"sorted"),length(bysplit)))) {
-        
-        # if the by are simple names of columns and they are the same as x's key,  then set bysameorder = TRUE
-        # could get more advanced later. for the moment its up to user to set bysameorder
-        
-        
-	    	if (verbose) {last.started.at=proc.time()[3];cat("Finding groups (bysameorder=",bysameorder,") ... ",sep="");flush.console()}        
+	    if (verbose) {last.started.at=proc.time()[3];cat("Finding groups (bysameorder=",bysameorder,") ... ",sep="");flush.console()}        
         byval = with(x, eval(bysub))
         if (!is.list(byval)) stop("by must evaluate to list")
         for (jj in seq_len(length(byval))) if (storage.mode(byval[[jj]]) != "integer") stop("column",jj,"of 'by' list is not integer")
+        tt = sapply(byval,length)
+        if (any(tt!=nrow(x))) stop("Each item in the 'by' list must be same length as rows in x (",nrow(x),"): ",paste(tt,collapse=","))
         if (bysameorder) {
           f__ = duplist(byval)
+          for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][f__]
         } else {
-          o__ = fastorder(by)
-          f__ = duplist(by,order=o__)
+          o__ = fastorder(byval)
+          f__ = duplist(byval,order=o__)
+          for (jj in seq_along(byval)) byval[[jj]] = byval[[jj]][o__[f__]]
         }
         if (f__[1] != 1) stop("Logical error in grouping. First item of the first group should always be 1.")
         len__ = as.integer(c(diff(f__), nrow(x)-last(f__)+1))
-	    	if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+	    if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+	    
+	    # browser()
+	    # to delete ... attr(byval,"sorted") = "yes sorted"
         
         
         # bysplit = strsplit(by,split=",")[[1]]
@@ -431,7 +440,15 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
    				jvnames = ""
    				jsub = parse(text=paste("list(",deparse(jsub),")",sep=""))[[1]]    
    			} else {
-   			  jvnames = names(as.list(jsub))[-1]
+   			  #browser()
+   			  jsubl = as.list(jsub)
+   			  if (length(jsubl)<2) stop("When j is list() or DT() we expect something inside the brackets")
+   			  jvnames = names(jsubl)[-1]   # check list(a=sum(v),v)
+   			  if (is.null(jvnames)) jvnames = rep("", length(jsubl)-1)
+   			  for (jj in 2:length(jsubl)) {
+   			    if (jvnames[jj-1] == "" && mode(jsubl[[jj]])=="name") jvnames[jj-1] = deparse(jsubl[[jj]])
+   			    # TO DO: if call to a[1] for example, then call it a too
+   			  }
    			  jsub = parse(text=paste("list(",paste(as.character(jsub)[-1],collapse=","),")",sep=""))[[1]]  # note this also changes 'DT' to 'list' for backwards compatibility
    			}
    		}
@@ -524,19 +541,28 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 			# TO DO : write directly to table output
     	if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
     	if (byretn==0) return(NULL)  # user wanted side effects only (e.g. plotting).
-    	browser()
-    	if (is.null(jvnames) || identical(jvnames,"")) jvnames = rep("",length(testj))
+    	# browser()
+    	#if (is.null(jvnames) || identical(jvnames,"")) jvnames = rep("",length(testj))
     	bynames = names(byval)
     	if (is.null(bynames)) bynames = rep("",length(byval))
     	ansnames = c(bynames, jvnames)
     	ww = which(ansnames=="")
     	if (any(ww)) ansnames[ww] = paste("V",ww,sep="")
     	names(ans) = ansnames
+    	# browser()
+    	ww = which(sapply(byval,is.factor))
+    	for (jj in ww) {levels(ans[[ww]]) = levels(byval[[ww]]); class(ans[[ww]])="factor"}
+    	
     	class(ans) = "data.table"
     	if (!incbycols) {
     	  warning("Removing by cols now for backwards compatibility. incbycols will be deprecated in future since 'by' is now fast.")
     	  ans = ans[,-seq_len(length(byval)),with=FALSE]
-    	}
+    	} else {
+    	    if ((!missing(by) && bysameorder) || (!missing(i) && haskey(i))) {
+    	        # either a spliced join, likely i was SJ() or a table already with a key,  or a by to the key columns in order
+    	        setkey("ans",colnames(ans)[seq_along(byval)], alternative=TRUE)
+    	    }
+        }   
     	# TO DO: set the key to the group column names
       #}
       # TO DO: port this into C, ignoring names etc
@@ -617,6 +643,9 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
   }
   if (!missing(i)) {
   	ans = list()
+  	
+  	#  TO DO: its the i join cols that should be in the result, not the x cols (which could be NA)
+  	
     for (s in seq(along=j)) {
   		# if (!is.null(dim(x[[j[s]]]))) stop("data.tables should only have vectors as columns")
       # ans[[s]] = x[[c(j[s],i)]]  ideal but this fails because [[ can only return 1 result.
