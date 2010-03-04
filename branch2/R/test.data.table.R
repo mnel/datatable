@@ -104,15 +104,15 @@ test.data.table = function()
     if (!identical(TESTDT[SJ(c("d","d","e","g"),c("f","g","a","b")),v,mult="first"], INT(3,NA,NA,7))) stop("Test 55 failed")
     if (!identical(TESTDT[J(c("g","d","e","d"),c("b","g","a","f")),v,mult="first"], INT(7,NA,NA,3))) stop("Test 56 failed")
     t = try(TESTDT[J(c("g","d","d","d","e","d"),c("b","g","k","b","a","f")),v,roll=TRUE],silent=TRUE)
-		if (!inherits(t,"try-error")) stop("Test 57 failed")	# When character, this works and evaluated to INT(7,4,6,NA,NA,3)
-		if (!length(grep("Attempting roll join on factor column", t))) stop("Test 58 failed")
-		t = try(TESTDT[J(c("g","d","d","d","e","d"),c("b","g","k","b","a","f")),v,rolltolast=TRUE],silent=TRUE)
+    if (!inherits(t,"try-error")) stop("Test 57 failed")    # When character, this works and evaluated to INT(7,4,6,NA,NA,3)
+    if (!length(grep("Attempting roll join on factor column", t))) stop("Test 58 failed")
+    t = try(TESTDT[J(c("g","d","d","d","e","d"),c("b","g","k","b","a","f")),v,rolltolast=TRUE],silent=TRUE)
     if (!inherits(t,"try-error")) stop("Test 59 failed")  # When character evaluates to INT(7,4,NA,NA,NA,3)
-	  if (!length(grep("Attempting roll join on factor column", t))) stop("Test 60 failed")
+    if (!length(grep("Attempting roll join on factor column", t))) stop("Test 60 failed")
 
 
     ##  Add tests on sortedmatch as well to nail it down even further,  even though its called above.
-		if (!exists("sortedmatch")) sortedmatch = data.table:::sortedmatch		# for eval(body(test.data.table)) when data.table is in namespace only and isn't in development in .GlobalEnv
+    if (!exists("sortedmatch")) sortedmatch = data.table:::sortedmatch        # for eval(body(test.data.table)) when data.table is in namespace only and isn't in development in .GlobalEnv
     if (!identical(sortedmatch(c("a","h","f","h","j"), letters[1:8]), INT(1,8,6,8,NA))) stop("Test 61 failed")
     if (!identical(sortedmatch(INT(5,2,4,3,NA,7), INT(2,4,5,7)), INT(3,1,2,NA,NA,4))) stop("Test 62 failed")
     if (!identical(sortedmatch(1:3,INT(NULL)), INT(NA,NA,NA))) stop("Test 63 failed")
@@ -125,8 +125,8 @@ test.data.table = function()
     if (!inherits(t,"try-error")) stop("Test 66 failed")    # only character or integer accepted
 
     # Test 67 removed. No longer use factors so debate/problem avoided.
-		# [.factor and c.factor are no longer present in data.table, not even hidden away
-		# X = factor(letters[1:10])
+    # [.factor and c.factor are no longer present in data.table, not even hidden away
+    # X = factor(letters[1:10])
     # if (!identical(levels(X[4:6]), letters[4:6])) stop("Test 67 failed")
 
     if (!"TESTDT" %in% tables(silent=TRUE)[,NAME]) stop("Test 68 failed")  # NAME is returned as a column in which we look for the string 
@@ -148,33 +148,33 @@ test.data.table = function()
     if (!identical(TESTDT[,colsVar,with=FALSE], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))) stop("Test 80 failed")
 
     # if (!identical(TESTDT[1:2,c(a,b)], factor(c("a","c","e","e")))) stop("Test 81 failed")  # v1.2
-		if (!identical(TESTDT[1:2,c(a,b)], INT(1,2,1,1))) stop("Test 81 failed")		# v1.3+
+    if (!identical(TESTDT[1:2,c(a,b)], INT(1,2,1,1))) stop("Test 81 failed")        # v1.3+
     # It is expected the above to be common source of confusion. c(a,b) is evaluated within
     # the frame of TESTDT, and c() creates one long vector, not 2 column subset as in data.frame's.
-		# Further, there is no c.factor in base R, and levels are dropped.
-		# As from v1.3, data.table no longer has a c.factor internally, test 81 was changed accordingly.
+    # Further, there is no c.factor in base R, and levels are dropped.
+    # As from v1.3, data.table no longer has a c.factor internally, test 81 was changed accordingly.
     # If 2 columns were required use list(a,b).  c() can be useful too though.
 
     if (!identical(TESTDT[,c("a","b")], c("a","b"))) stop("Test 82 failed")
     if (!identical(TESTDT[,list("a","b")], list("a","b"))) stop("Test 83 failed")
-    # if (!identical(TESTDT[1:2,list(a,b)], list(c("a","c"), c("e","e")))) stop("Test 84 failed")  # should be a data.table
+    #  if (!identical(TESTDT[1:2,list(a,b)], list(c("a","c"), c("e","e")))) stop("Test 84 failed")  # should be a data.table
     if (!identical(TESTDT[1:2,DT(a,b)], data.table(a=c("a","c"), b=c("e","e")))) stop("Test 85 failed")
-cat("85\n")
+
     if (!identical(TESTDT[,sum(v),by="b"], DT(b=c("b","e","f","i"),V1=INT(7,3,7,11)))) stop("Test 86 failed")  # TESTDT is key'd by a,b, so correct that grouping by b should not be key'd in the result by default
     if (!identical(TESTDT[,DT(MySum=sum(v)),by="b"], DT(b=c("b","e","f","i"),MySum=INT(7,3,7,11)))) stop("Test 87 failed")
     if (!identical(TESTDT[,DT(MySum=sum(v),Sq=v*v),by="b"][1:2], DT(b=c("b","e"),MySum=INT(7,3),Sq=INT(49,1)))) stop("Test 88 failed")   # silent repetition of MySum to match the v*v vector
-    if (!identical(TESTDT[,sum(v),by="b",simplify=FALSE], list(7L,3L,7L,11L))) stop("Test 89 failed")  # there will be no simplify=FALSE option soon
+    # Test 89 dropped. Simplify argument no longer exists. by is now fast and always returns a data.table  ... if (!identical(TESTDT[,sum(v),by="b",simplify=FALSE], list(7L,3L,7L,11L))) stop("Test 89 failed")
 
     setkey(TESTDT,b)
     if (!identical(TESTDT[J(c("f","i")),sum(v),mult="all"], DT(b=c("f","i"),V1=c(7L,11L)))) stop("Test 90 failed")  # aggregation via groups passed into i and mult="all"
     if (!identical(TESTDT[SJ(c("f","i")),sum(v),mult="all"], DT(b=c("f","i"),V1=c(7L,11L),key="b"))) stop("Test 91 failed")  # aggregation via groups passed into i and mult="all"
-    if (!identical(TESTDT[J(c("f","i")),sum(v),mult="all",simplify=FALSE], list(7L,11L))) stop("Test 92 failed")
+    # Test 92 dropped same reason as 89 ... if (!identical(TESTDT[J(c("f","i")),sum(v),mult="all",simplify=FALSE], list(7L,11L))) stop("Test 92 failed")
 
     if (!identical(TESTDT[J(c("f","i")), which=TRUE], INT(4,6))) stop("Test 93 failed")
     if (!identical(TESTDT[J(c("i","f")), mult="last", which=TRUE], INT(7,5))) stop("Test 94 failed")
-cat("94\n")
+
     if (!identical(TESTDT["f",v], 3L)) stop("Test 95 failed")
-    if (!identical(TESTDT["f",v,mult="all"], DT(b="f",V1=3:4))) stop("Test 96 failed")
+    if (!identical(TESTDT["f",v,mult="all"], DT(b="f",v=3:4))) stop("Test 96 failed")
     if (!identical(TESTDT[c("f","i","b"),DT(GroupSum=sum(v)),mult="all"], DT(b=c("f","i","b"), GroupSum=c(7L,11L,7L)))) stop("Test 97 failed")  # mult="all" is required here since only b is key'd
     # that line above doesn't create a key on the result so that the order fib is preserved.
     if (!identical(TESTDT[SJ(c("f","i","b")),DT(GroupSum=sum(v)),mult="all"], DT(b=c("b","f","i"), GroupSum=c(7L,7L,11L), key="b"))) stop("Test 98 failed")
@@ -193,7 +193,7 @@ cat("94\n")
 
     # test .SD object
     if (!identical(dt[, sum(.SD$B), by = "A"], dt[, sum(B), by = "A"]))  stop("Test 103 failed")
-	if (!identical(dt[, transform(.SD, D = min(B)), by = "A"], dt[, DT(A,B,C,D=min(B)), by = "A"]))  stop("Test 104 failed")
+    if (!identical(dt[, transform(.SD, D = min(B)), by = "A"], dt[, DT(A,B,C,D=min(B)), by = "A"]))  stop("Test 104 failed")
 
     # test numeric and comparison operations on a data table
     if (!all(dt + dt > dt))  stop("Test 105 failed")
@@ -225,46 +225,46 @@ cat("94\n")
     setkey("dt2", "A", alternative = TRUE)
     if (!identical(dt1, dt2))  stop("Test 115 failed")
 
-		# Test dogroups works correctly for character columns
-		if(!identical(TESTDT[,a[1],by="b"], data.table(b=c("b","e","f","i"), V1=c("g","a","d","d"), key="b"))) stop("Test 116 failed")
-		if(!identical(TESTDT[,list(a[1],v[1]),by="b"], data.table(b=c("b","e","f","i"), V1=c("g","a","d","d"), V2=INT(7,1,3,5), key="b"))) stop("Test 117 failed")
+    # Test dogroups works correctly for character/factor columns
+    if(!identical(TESTDT[,a[1],by="b"], data.table(b=c("b","e","f","i"), V1=c("g","a","d","d"), key="b"))) stop("Test 116 failed")
+    if(!identical(TESTDT[,list(a[1],v[1]),by="b"], data.table(b=c("b","e","f","i"), V1=c("g","a","d","d"), V2=INT(7,1,3,5), key="b"))) stop("Test 117 failed")
 
-		# We no longer check i for out of bounds, for consistency with data.frame. NA rows should be returned for i>nrow
-		if (!identical(TESTDT[8], data.table(a=as.character(NA), b=as.character(NA), v=as.integer(NA), key="b"))) stop("Test 118 failed")
-		if (!identical(TESTDT[6:9], data.table(a=c("d","d",NA,NA), b=c("i","i",NA,NA), v=c(5L,6L,NA,NA)))) stop("Test 119 failed")
+    # We no longer check i for out of bounds, for consistency with data.frame. NA rows should be returned for i>nrow
+    if (!identical(TESTDT[8], data.table(a=as.character(NA), b=as.character(NA), v=as.integer(NA), key="b"))) stop("Test 118 failed")
+    if (!identical(TESTDT[6:9], data.table(a=c("d","d",NA,NA), b=c("i","i",NA,NA), v=c(5L,6L,NA,NA)))) stop("Test 119 failed")
 
-		n=10000
-		grp1=sample(1:50,n,replace=TRUE)
-		grp2=sample(1:50,n,replace=TRUE)
-		dt=data.table(x=rnorm(n),y=rnorm(n),grp1=grp1,grp2=grp2)
-		tt = system.time({ans = dt[,list(.Internal(mean(x)),.Internal(mean(y))),by="grp1,grp2"]})
-		if (tt[1] > 0.5) stop("Test 120 failed. Took too long.")  # actually takes more like 0.068
-		i = sample(nrow(ans),1)
-		if (!identical(ans[i,c(V1,V2)], dt[grp1==ans[i,grp1] & grp2==ans[i,grp2], c(mean(x),mean(y))])) stop("Test 121 failed")
-		# To DO: add a data.frame aggregate method here and check data.table is faster
+    n=10000
+    grp1=sample(1:50,n,replace=TRUE)
+    grp2=sample(1:50,n,replace=TRUE)
+    dt=data.table(x=rnorm(n),y=rnorm(n),grp1=grp1,grp2=grp2)
+    tt = system.time({ans = dt[,list(.Internal(mean(x)),.Internal(mean(y))),by="grp1,grp2"]})
+    if (tt[1] > 0.5) stop("Test 120 failed. Took too long.")  # actually takes more like 0.068
+    i = sample(nrow(ans),1)
+    if (!identical(ans[i,c(V1,V2)], dt[grp1==ans[i,grp1] & grp2==ans[i,grp2], c(mean(x),mean(y))])) stop("Test 121 failed")
+    # To DO: add a data.frame aggregate method here and check data.table is faster
 
-
-		# Tests of 0 and 1 row tables
-		TESTDT = data.table(NULL)
-		if (!identical(TESTDT[1], TESTDT)) stop("Test 122 failed")
-		if (!identical(TESTDT[0], TESTDT)) stop("Test 123 failed")
-		if (!identical(TESTDT[1:10], TESTDT)) stop("Test 124 failed")
-		t = try(TESTDT["k"], silent=TRUE)
+    # Tests of 0 and 1 row tables
+    TESTDT = data.table(NULL)
+    if (!identical(TESTDT[1], TESTDT)) stop("Test 122 failed")
+    if (!identical(TESTDT[0], TESTDT)) stop("Test 123 failed")
+    if (!identical(TESTDT[1:10], TESTDT)) stop("Test 124 failed")
+    t = try(TESTDT["k"], silent=TRUE)
     if (!inherits(t,"try-error")) stop("Test 125 failed")
-		if (!length(grep("The data.table has no key", t))) stop("Test 126 failed")
+    if (!length(grep("The data.table has no key", t))) stop("Test 126 failed")
 
-		TESTDT = data.table(a=3L,v=2,key="a")
-	  if (!identical(TESTDT[J(3)], TESTDT)) stop("Test 127 failed")
-		if (!identical(TESTDT[J(4)], TESTDT[NA])) stop("Test 128 failed")
-  	if (!identical(TESTDT[J(4),roll=TRUE], TESTDT)) stop("Test 129 failed")
-		if (!identical(TESTDT[J(4),rolltolast=TRUE], TESTDT[NA])) stop("Test 130 failed")
-		if (!identical(TESTDT[J(-4),roll=TRUE], TESTDT[NA])) stop("Test 131 failed")
+    TESTDT = data.table(a=3L,v=2,key="a")
+    if (!identical(TESTDT[J(3)], TESTDT)) stop("Test 127 failed")
+    if (!identical(TESTDT[J(4)], TESTDT[NA])) stop("Test 128 failed")
+    if (!identical(TESTDT[J(4),roll=TRUE], TESTDT)) stop("Test 129 failed")
+    if (!identical(TESTDT[J(4),rolltolast=TRUE], TESTDT[NA])) stop("Test 130 failed")
+    if (!identical(TESTDT[J(-4),roll=TRUE], TESTDT[NA])) stop("Test 131 failed")
 
-	  if (!identical(ncol(TESTDT[0]), 2L)) stop("Test 132 failed")
-		if (!identical(TESTDT[0][J(3)], TESTDT[NA])) stop("Test 133 failed")
+    if (!identical(ncol(TESTDT[0]), 2L)) stop("Test 132 failed")
+    if (!identical(TESTDT[0][J(3)], TESTDT[NA])) stop("Test 133 failed")
 
-		
     cat("All 133 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
     # should normally complete in under 2 sec, unless perhaps if a gc was triggered
     invisible()
 }
+
+

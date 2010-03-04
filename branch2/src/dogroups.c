@@ -107,7 +107,7 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
         for (j=0; j<njval; j++) {
             thislen = LENGTH(VECTOR_ELT(jval,j));
             maxn = thislen>maxn ? thislen : maxn;
-            if (TYPEOF(VECTOR_ELT(jval, j)) != TYPEOF(VECTOR_ELT(ans, j))) error("columns of j don't evaluate to consistent types for each group");
+            if (TYPEOF(VECTOR_ELT(jval, j)) != TYPEOF(VECTOR_ELT(ans, j+nbyval))) error("columns of j don't evaluate to consistent types for each group");
         }
         if (ansloc + maxn > INTEGER(byretn)[0]) error("Didn't allocate enough rows. Must grow ans (to implement as we don't want default slow grow)");
         for (j=0; j<nbyval; j++) {
