@@ -262,7 +262,28 @@ test.data.table = function()
     if (!identical(ncol(TESTDT[0]), 2L)) stop("Test 132 failed")
     if (!identical(TESTDT[0][J(3)], TESTDT[NA])) stop("Test 133 failed")
 
-    cat("All 133 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
+    # tests on data table names
+    x = 2L; `1x` = 4L
+    dt = data.table(a.1 = 1L, b_1 = 2L, "1b" = 3L, `a 1` = 4L, x, `1x`, 2*x) 
+    if (!identical(names(dt), c("a.1", "b_1", "X1b", "a.1.1", "x", "V6", "V7"))) stop("Test 134 failed")
+
+    dt = data.table(a.1 = 1L, b_1 = 2L, "1b" = 3L, `a 1` = 4L, x, `1x`, 2*x, check.names = FALSE)    
+    if (!identical(names(dt), c("a.1", "b_1", "1b", "a 1", "x", "V6", "V7"))) stop("Test 135 failed") # the last two terms differ from data.frame()
+
+    if (!identical(dt[,b_1,   by="a.1"],   data.table(a.1=1L,V1=2L))) stop("Test 136 failed")
+    if (!identical(dt[,`a 1`, by="a.1"],   data.table(a.1=1L,V1=4L))) stop("Test 137 failed")
+    if (!identical(dt[,a.1,   by="`a 1`"], data.table(`a 1`=4L,V1=1L, check.names = FALSE))) stop("Test 138 failed")     
+
+    # tests with NA's in factors
+    dt = data.table(a = c(NA, letters[1:5]), b = 1:6)
+    if (!identical(dt[,sum(b), by="a"], data.table(a = c(NA, letters[1:5]), V1 = 1:6))) stop("Test 139 failed")     
+    
+    # tests to make sure rbind and grouping keep classes
+    dt = data.table(a = rep(as.Date("2010-01-01"), 4), b = rep("a",4))
+    if (!identical(rbind(dt,dt), data.table(a = rep(as.Date("2010-01-01"), 8), b = rep("a",8)))) stop("Test 140 failed")
+    if (!identical(dt[,list(a=a), by="b"], dt[,2:1, with = FALSE])) stop("Test 141 failed") # doesn't work, yet
+    
+    cat("All 141 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
     # should normally complete in under 2 sec, unless perhaps if a gc was triggered
     invisible()
 }
