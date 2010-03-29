@@ -37,6 +37,7 @@ setkey = function(x, ..., loc=parent.frame(), alternative = FALSE)
 }
 
 radixorder1 <- function(x, na.last = FALSE, decreasing = FALSE) {
+    if(is.object(x)) x = xtfrm(x) # should take care of handling factors, Date's and others, so we don't need unlist
     if(!typeof(x) == "integer") # do want to allow factors here, where we assume the levels are sorted as we always do in data.table
         stop("radixorder1 is only for integer 'x'")
     if(is.na(na.last))
@@ -47,6 +48,7 @@ radixorder1 <- function(x, na.last = FALSE, decreasing = FALSE) {
 }
 
 regularorder1 <- function(x, na.last = FALSE, decreasing = FALSE) {
+    if(is.object(x)) x = xtfrm(x) # should take care of handling factors, Date's and others, so we don't need unlist
     if(is.na(na.last))
         return(.Internal(order(TRUE, decreasing, x))[seq_len(sum(!is.na(x)))])
     else
@@ -60,31 +62,26 @@ fastorder <- function(lst, which=seq_along(lst), na.last = FALSE, decreasing = F
     # 'which' may be integers or names
     # Its easier to pass arguments around this way, and we know for sure that [[ doesn't take a copy but l=list(...) might do.
     printdone=FALSE
-    if (all(sapply(lst,storage.mode)=="integer")) {    # if we have a lot of columns then faster to test all are integer first (quick) before starting to call radix
+    # Run through them back to front to group columns.
+    w <- last(which)
+    err <- try(silent = TRUE, {
+        # Use a radix sort (fast and stable), but it will fail if there are more than 1e5 unique elements (or any negatives)
+        o <- radixorder1(lst[[w]], na.last = na.last, decreasing = decreasing)
+    })
+    if (inherits(err, "try-error"))
+        o <- regularorder1(lst[[w]], na.last = na.last, decreasing = decreasing)
+    # If there is more than one column, run through them back to front to group columns.
+    for (w in rev(take(which))) {
         err <- try(silent = TRUE, {
-            # Use a radix sort (fast and stable), but it will fail if there are more than 1e5 unique elements (or any negatives)
-            o <- radixorder1(lst[[last(which)]], na.last = na.last, decreasing = decreasing)
-            # If there is more than one column, run through them back to front to group columns.
-            # The unclass(col) is so we don't try to mess with factors (factor sorting slows things down).
-            # TO DO: can we avoid the unclass (which takes a copy?) by passing o into the radixorder rather than copying (again) via the [o]
-            if (length(which) > 1)
-                for (w in rev(take(which)))
-                    o <- o[radixorder1(unclass(lst[[w]])[o], na.last = na.last, decreasing = decreasing)]                    
+            o <- o[radixorder1(lst[[w]][o], na.last = na.last, decreasing = decreasing)]
         })
-        if (!inherits(err, "try-error")) return(o)
-        if (verbose) {
-            errtxt = gsub("^[ ]+","",strsplit(err,split="\n")[[1]][2])
-            cat("Radix error: ",errtxt,". Running order now ...",sep="");flush.console()
-            printdone=TRUE
-        }
+        if (inherits(err, "try-error"))
+            o <- o[regularorder1(lst[[w]][o], na.last = na.last, decreasing = decreasing)]
     }
-    o <- regularorder1(lst[[last(which)]], na.last = na.last, decreasing = decreasing)
-    if (length(which) > 1)
-        for (w in rev(take(which)))
-            o <- o[regularorder1(unclass(lst[[w]])[o], na.last = na.last, decreasing = decreasing)]    
     if (printdone) {cat("done\n");flush.console()}   # TO DO - add time taken
     o
 }
+
 
 J = function(...,SORTFIRST=FALSE) {
     # J because a little like the base function I(). Intended as a wrapper for subscript to DT[]
