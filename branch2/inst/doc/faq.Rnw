@@ -1,0 +1,75 @@
+\documentclass[a4paper]{article}
+
+\usepackage[margin=2cm]{geometry}
+\usepackage[round]{natbib}
+\usepackage{url}
+\usepackage{hyperref}
+
+\newcommand{\acronym}[1]{\textsc{#1}}
+\newcommand{\class}[1]{\mbox{\textsf{#1}}}
+\newcommand{\code}[1]{\mbox{\texttt{#1}}}
+\newcommand{\pkg}[1]{{\normalfont\fontseries{b}\selectfont #1}}
+\newcommand{\proglang}[1]{\textsf{#1}}
+\SweaveOpts{keep.source=TRUE}
+%% \VignetteIndexEntry{FAQs - data.table}
+
+\begin{document}
+<<echo=FALSE,results=hide>>=
+library("data.table")
+rm(list=as.character(tables()$NAME))  # for development when we repeatedly run Sweave
+@
+\title{FAQs about the \pkg{data.table} package in \proglang{R}}
+\author{Matthew Dowle}
+\maketitle
+
+\section*{Beginners FAQs}
+
+This first section is intended to be read in order from start to finish.
+
+
+
+
+
+\section*{General questions about the package}
+
+Q : Is data.table compatible with S-plus ?
+A : No. i) A few critical parts of the package are written in C and uses internal functions and structures.
+  ii) the package uses lexical scoping which is one of the differences between R and S-plus explained by R FAQ 3.3.1.
+
+Q : I think its great. How do I suggest it to other people ?
+A : Thank you. Please put your comments on crantastic.
+
+Q : I think its not great. How do I warn others about my experience ?
+A : Please put your comments on crantastic. Try to make it constructive so we have a chance to improve.
+
+Q : I have a question. I know the posting guide tells me to contact the maintainer, but thats just one person. Isn't
+there a group of people I can ask ?
+A : Yes. Please post to datatable-help@lists.r-forge.r-project.org. Its just like r-help, but just for this package.
+Many packages on R-forge have similar lists by the way. Some have two: -help and -devel.  As always, please follow
+the posting guide and remember that the list is public domain and the archives are stored forever.
+DO NOT post to r-help about this package unless you don't hear back.
+
+Q : I don't want to contact datatable-help, can I mail just one person privately?
+Sure.  But then post to datatable-help if you don't hear back from them, not r-help. Only if you don't hear back
+from anyone on datatable-help is it ok to post to r-help.
+
+Q : Why is this FAQ a pdf? Its difficult to move around this document. Can we have the FAQ on a website?
+A : The FAQ is written using Sweave .Rnw for several reasons :
+\begin{itemize}
+\item We include R code in the answers. This is run and checked when the document is created.
+\item This document is reproducible. Grab the .Rnw and you can run it yourself.
+\item You can extract the code chunks using R function Stangle.
+\item This file is built every night in development so its another way to check the package. 
+\item This file is bound into each version of the package. The package is not accepted on CRAN unless this file passes checks. Each version of the
+package will have its own FAQ file which will be relevant for that version.  There is usually only one version of a website.
+\item You can open it offline, from your R prompt using vignette().
+\item It prints out easily.
+\item Its quicker and easier for us to maintain the FAQ in .Rnw form.
+\end{itemize}
+
+
+\end{document}
+
+
+
+

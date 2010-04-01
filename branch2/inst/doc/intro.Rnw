@@ -1,11 +1,9 @@
-%% Sweave("intro.Rnw")
-%% tools::texi2dvi("intro.tex", pdf=TRUE)
-
 \documentclass[a4paper]{article}
 
 \usepackage[margin=2cm]{geometry}
 \usepackage[round]{natbib}
 \usepackage{url}
+\usepackage{hyperref}
 
 \newcommand{\acronym}[1]{\textsc{#1}}
 \newcommand{\class}[1]{\mbox{\textsf{#1}}}
@@ -18,7 +16,7 @@
 \begin{document}
 <<echo=FALSE,results=hide>>=
 library("data.table")
-rm(list=as.character(tables()$NAME))  # for development when repeatedly run Sweave
+rm(list=as.character(tables()$NAME))  # for development when we repeatedly run Sweave
 @
 \title{Introduction to the \pkg{data.table} Package in \proglang{R}}
 \author{Matthew Dowle}
@@ -99,7 +97,7 @@ No keys have been set yet.  We \emph{can} use data.frame syntax without a key.
 
 <<>>=
 dt[2,]
-dt[ dt$x == "a", ]
+dt[ dt$x == "b", ]
 @
 
 But since there are no rownames the following does not work.
@@ -114,7 +112,7 @@ setkey(dt,x)
 dt
 @
 
-Notice that the rows in dt have been re-ordered by x. The 2 ''a'' rows have moved to the top.
+Notice that the rows in dt have been re-ordered by x. The two ''a'' rows have moved to the top.
 We can confirm that dt does indeed have a key using haskey(), key(),
 attributes(), or just running tables().
 
@@ -128,7 +126,7 @@ Now we are sure that dt has a key, lets try again.
 dt["b",]
 @
 
-Since there are duplicates in this key (i.e. repeated values) the subset returns the first, by default. The
+Since there are duplicates in this key (i.e. repeated values of ''b'') the subset returns the first row in that group, by default. The
 \code{mult} argument (short for \emph{multiple}) controls this.
 
 <<>>=
@@ -155,11 +153,25 @@ First section was to do with i. Second section to do with j.
 
 \section*{2. Fast grouping}
 
-So far we have dealt with the first argument inside []. The first is call i. The second is called j and may
-be an expression, or list of expressions, of column names as if the column names were variables.
+So far we have dealt with the first argument inside []. The first is call i. The second is called j and may be
+one or more expressions of column names as if the column names were variables.
 
 When we supply a j expression and a 'by' list of expressions, the j expression is repeated for each group defined
 by the 'by'.
+
+subsection : Scope
+
+Think of the subset as an environment where all the column names are
+variables. When a variable is used in the j expression, it is looked for in the following order :
+\begin{enumerate}
+\item The scope of the subset i.e. the column names
+\item The scope of the calling frame e.g. the line that appears before the data.table query
+\item TO CHECK. Does it ripple up or go straight to .GlobalEnv?
+\item The global environment
+\end{enumerate}
+
+This is ''lexical scoping'' explained by \href{http://cran.r-project.org/doc/FAQ/R-FAQ.html#Lexical-scoping}{R FAQ 3.3.1}
+
 
 TO DO - examples.
 
@@ -181,8 +193,10 @@ This was a quick start guide. Further resources include :
 \item test.data.table contains over 100 low level tests of the features.
 \item Presentations
 \item YouTube Demo
-\item R-Forge commit logs.
-\item Website. Will be updated more regularly
+\item R-Forge commit logs: \url{http://lists.r-forge.r-project.org/pipermail/datatable-commits/}
+\item Website: \url{http://datatable.r-forge.r-project.org/}
+\item Mailing list : \href{mailto:datatable-help@lists.r-forge.r-project.org}{datatable-help@lists.r-forge.r-project.org}
+
 \end{itemize}
 
 \end{document}

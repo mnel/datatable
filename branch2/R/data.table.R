@@ -200,7 +200,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (is.null(i)) return(structure(NULL,class="data.table"))
         if (is.character(i)) {
             # user can feel like they are using rownames if they like
-            if (!haskey(x)) stop("The data.table has no key but i is character. Call setkey() first on an appropriate character column in the data.table, and try again.")
+            if (!haskey(x)) stop("The data.table has no key but i is character. Call setkey first, see ?setkey.")
             if (!is.factor(x[[match(getkey(x)[1], colnames(x))]])) stop("The data.table has a key, but the first column of that key is not factor. i cannot be character in this case")
             i = J(i)    # so DT[c("e","f")] returns different order to DT[c("f","e")] as is most natural. Pass in SJ(c("f","e")) to guarantee result of grouping is sorted by the groups and is key'd by group
         }
