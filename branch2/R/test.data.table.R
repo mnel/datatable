@@ -222,7 +222,7 @@ test.data.table = function()
     # test the alternate form of setkey:
     dt1 <- dt2 <- dt
     setkey(dt1, "A")
-    setkey("dt2", "A", alternative = TRUE)
+    setkey("dt2", "A")
     if (!identical(dt1, dt2))  stop("Test 115 failed")
 
     # Test dogroups works correctly for character/factor columns

@@ -201,16 +201,16 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         if (is.character(i)) {
             # user can feel like they are using rownames if they like
             if (!haskey(x)) stop("The data.table has no key but i is character. Call setkey first, see ?setkey.")
-            if (!is.factor(x[[match(getkey(x)[1], colnames(x))]])) stop("The data.table has a key, but the first column of that key is not factor. i cannot be character in this case")
+            if (!is.factor(x[[match(key(x)[1], colnames(x))]])) stop("The data.table has a key, but the first column of that key is not factor. i cannot be character in this case")
             i = J(i)    # so DT[c("e","f")] returns different order to DT[c("f","e")] as is most natural. Pass in SJ(c("f","e")) to guarantee result of grouping is sorted by the groups and is key'd by group
         }
         if (is.data.table(i)) {
             if (!haskey(x)) stop("When i is a data.table, x must be sorted to avoid a vector scan of x per row of i")
-            rightcols = match(getkey(x),colnames(x))
+            rightcols = match(key(x),colnames(x))
             if (any(is.na(rightcols))) stop("sorted columns of x don't exist in the colnames. data.table is not a valid data.table")
             for (a in rightcols) if (!storage.mode(x[[a]]) %in% c("integer")) stop("sorted column ",colnames(x)[a], " in x is not storage.mode integer")
             if (haskey(i)) {
-                leftcols = match(getkey(i),colnames(i))
+                leftcols = match(key(i),colnames(i))
                 if (any(is.na(leftcols))) stop("sorted columns of i don't exist in the colnames of i. data.table is not a valid data.table")
                 if (length(rightcols) < length(leftcols)) stop("i has more sorted columns than x has sorted columns, invalid sorted match")
                 if (missing(mult) && length(rightcols) > length(leftcols)) mult="all"  # See .Rd documentation
@@ -233,7 +233,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                         if (is.factor(x[[rc]])) stop("x.",colnames(x)[rc]," is a factor but joining to i.",colnames(i)[lc]," which is not a factor. Factors must join to factors.")
                     }
                 }
-                iby = getkey(x)[seq(1,length(attr(i,"sorted")))]
+                iby = key(x)[seq(1,length(attr(i,"sorted")))]
             } else {
                 leftcols = 1:min(ncol(i),length(rightcols))     # The order of the columns in i must match to the order of the sorted columns in x
                 if (missing(mult) && length(rightcols) > length(leftcols)) mult="all"  # See .Rd documentation
@@ -251,7 +251,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                         if (is.factor(x[[rc]])) stop("x.",colnames(x)[rc]," is a factor but joining to i.",colnames(i)[lc]," which is not a factor. Factors must join to factors.")
                     }
                 }
-                iby = getkey(x)[seq(1,ncol(i))]
+                iby = key(x)[seq(1,ncol(i))]
             }
             idx.start = integer(nrow(i))
             idx.end = integer(nrow(i))
@@ -315,7 +315,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 # vector length one,  but from v1.3 is e.g. bycriteria = quote(list(colA,colB%%100)); DT[...,by=bycriteria]
             
                 byvars = all.vars(bysub)   # not a perfect test but works most of the time
-                if (missing(bysameorder) && length(byvars) <= length(getkey(x)) && identical(byvars,head(getkey(x),length(byvars)))) {
+                if (missing(bysameorder) && length(byvars) <= length(key(x)) && identical(byvars,head(key(x),length(byvars)))) {
                     bysameorder=TRUE
                     # table is already sorted by the group criteria, no need to sort
                     # fastorder is so fast though that maybe this is not worth worrying about, especially if fastorder is even faster if its already sorted.
@@ -461,7 +461,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             } else {
                 if ((!missing(by) && bysameorder) || (!missing(i) && haskey(i))) {
                     # either a spliced join, likely i was SJ() or a table already with a key,  or a by to the key columns in order
-                    setkey("ans",colnames(ans)[seq_along(byval)], alternative=TRUE)
+                    setkey("ans",colnames(ans)[seq_along(byval)])
                 }
             }   
             for (s in seq_len(ncol(ans))) if (is.factor(ans[[s]])) ans[[s]] = factor(ans[[s]])  # drop unused levels

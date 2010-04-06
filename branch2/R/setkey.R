@@ -1,38 +1,35 @@
-setkey = function(x, ..., loc=parent.frame(), alternative = FALSE)
+setkey = function(x, ..., loc=parent.frame())
 {
     # sorts table by the columns, and sets the key to be those columns
     # example of use:   setkey(tbl,colA,colC,colB)
-    # will always change the table passed in by reference
-    # thought about requiring caller to pass in as.ref() but figured neater to do it inside here.
-    # TO DO: allow secondary index, which stores the sorted key + a column of integer rows in the primary sorted table. Interesting when it comes to table updates to maintain the keys.
-    # TO DO: if key is already set, don't reset it.
-    # TO DO: remove use of ref
-    require(ref)
-    if (alternative)
+    #             or:   setkey("tbl",c("colA","colC","colB"))
+    # changes the table passed in by reference
+    # TO DO: allow secondary index, which stores the sorted key + a column of integer rows in the primary sorted table. Will need to either drop or maintain keys with updates or inserts.
+    if (is.character(x)) {
+        if (length(x)>1) stop("x is character vector length > 1")
         name = x
-    else
+        if (!exists(name, env=loc)) loc=.GlobalEnv
+        x = get(x,envir=loc,inherits=FALSE)
+        cols=c(...)
+    }  else {
         name = deparse(substitute(x))
-    if (!exists(name, env=loc)) loc=.GlobalEnv
-    x = list(name=name, loc=loc)
-    class(x) = "ref"
-    if (!is.data.table(deref(x))) stop("first argument must be a data.table")
-    if (any(sapply(deref(x),is.ff))) stop("joining to a table with ff columns is not yet implemented")
-    if (alternative)
-        cols = c(...)
-    else
         cols = getdots()
-    if (!length(cols)) {
-        cols = colnames(deref(x))   #stop("Must supply one or more columns for the key")
-    } else {
-        miss = !(cols %in% colnames(deref(x)))
-        if (any(miss)) stop("some columns are not in the table: " %+% cols[miss])
     }
-    if (!all( sapply(deref(x),storage.mode)[cols] == "integer")) stop("All keyed columns must be storage mode integer")
-    o = fastorder(deref(x), cols, na.last=FALSE)
-    # o = eval(parse(text=paste("deref(x)[,fastorder(",paste(cols,collapse=","),",na.last=FALSE)]",sep="")))
+    if (identical(key(x),cols)) return(invisible()) # table is already key'd by those columns
+    if (!is.data.table(x)) stop("first argument must be a data.table")
+    if (any(sapply(x,is.ff))) stop("joining to a table with ff columns is not yet implemented")
+    if (!length(cols)) {
+        cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
+    } else {
+        miss = !(cols %in% colnames(x))
+        if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
+    }
+    if (!all( sapply(x,storage.mode)[cols] == "integer")) stop("All keyed columns must be storage mode integer")
+    o = fastorder(x, cols, na.last=FALSE)
     # We put NAs first because NA is internally a very large negative number. This is relied on in the C binary search.
-    deref(x) = deref(x)[o]
-    attr(deref(x),"sorted") = cols
+    ans = x[o]   # TO DO: implement column by column re-order here, so only memory for one column is required, rather than copy of whole table.
+    attr(ans,"sorted") = cols
+    assign(name,ans,envir=loc)
     invisible()
 }
 
@@ -109,9 +106,14 @@ CJ = function(...)
     SJ(l)    # This will then expand out the vectors to fit.
 }
 
-# TO DO:  reliably mark tables as sorted so we don't need to sort again.  maybe this is simple one line change above to check for $sorted
+key = function(x) attr(x,"sorted")
 
-getkey = function(x, ...) attr(x,"sorted")
+"key<-" = function(x,value) {
+    if (is.null(value)) attr(x,"sorted")=NULL
+    else setkey("x",value)
+    x
+}
 
-haskey = function(x) !is.null(attr(x,"sorted"))
+haskey = function(x) !is.null(key(x))
+
 
