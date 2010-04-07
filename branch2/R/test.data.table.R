@@ -147,13 +147,10 @@ test.data.table = function()
     if (!identical(TESTDT[,colsVar], colsVar)) stop("Test 79 failed")
     if (!identical(TESTDT[,colsVar,with=FALSE], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))) stop("Test 80 failed")
 
-    # if (!identical(TESTDT[1:2,c(a,b)], factor(c("a","c","e","e")))) stop("Test 81 failed")  # v1.2
-    if (!identical(TESTDT[1:2,c(a,b)], INT(1,2,1,1))) stop("Test 81 failed")        # v1.3+
+    if (!identical(TESTDT[1:2,c(a,b)], factor(c("a","c","e","e")))) stop("Test 81 failed")
     # It is expected the above to be common source of confusion. c(a,b) is evaluated within
-    # the frame of TESTDT, and c() creates one long vector, not 2 column subset as in data.frame's.
-    # Further, there is no c.factor in base R, and levels are dropped.
-    # As from v1.3, data.table no longer has a c.factor internally, test 81 was changed accordingly.
-    # If 2 columns were required use list(a,b).  c() can be useful too though.
+    # the frame of TESTDT, and c() creates one vector, not 2 column subset as in data.frame's.
+    # If 2 columns were required use list(a,b).  c() can be useful too, but is different.
 
     if (!identical(TESTDT[,c("a","b")], c("a","b"))) stop("Test 82 failed")
     if (!identical(TESTDT[,list("a","b")], list("a","b"))) stop("Test 83 failed")
@@ -270,9 +267,9 @@ test.data.table = function()
     dt = data.table(a.1 = 1L, b_1 = 2L, "1b" = 3L, `a 1` = 4L, x, `1x`, 2*x, check.names = FALSE)    
     if (!identical(names(dt), c("a.1", "b_1", "1b", "a 1", "x", "V6", "V7"))) stop("Test 135 failed") # the last two terms differ from data.frame()
 
-    if (!identical(dt[,b_1,   by="a.1"],   data.table(a.1=1L,V1=2L))) stop("Test 136 failed")
-    if (!identical(dt[,`a 1`, by="a.1"],   data.table(a.1=1L,V1=4L))) stop("Test 137 failed")
-    if (!identical(dt[,a.1,   by="`a 1`"], data.table(`a 1`=4L,V1=1L, check.names = FALSE))) stop("Test 138 failed")     
+    if (!identical(dt[,b_1,   by="a.1"],   data.table(a.1=1L,"b_1"=2L))) stop("Test 136 failed")
+    if (!identical(dt[,`a 1`, by="a.1"],   data.table(a.1=1L,"a 1"=4L, check.names=FALSE))) stop("Test 137 failed")
+    if (!identical(dt[,a.1,   by="`a 1`"], data.table(`a 1`=4L,a.1=1L, check.names=FALSE))) stop("Test 138 failed")     
 
     # tests with NA's in factors
     dt = data.table(a = c(NA, letters[1:5]), b = 1:6)
@@ -281,7 +278,7 @@ test.data.table = function()
     # tests to make sure rbind and grouping keep classes
     dt = data.table(a = rep(as.Date("2010-01-01"), 4), b = rep("a",4))
     if (!identical(rbind(dt,dt), data.table(a = rep(as.Date("2010-01-01"), 8), b = rep("a",8)))) stop("Test 140 failed")
-    if (!identical(dt[,list(a=a), by="b"], dt[,2:1, with = FALSE])) stop("Test 141 failed") # doesn't work, yet
+    if (!identical(dt[,list(a=a), by="b"], dt[,2:1, with = FALSE])) stop("Test 141 failed")
     
     dt$a <- structure(as.integer(dt$a), class = "Date")
     if (!identical(dt[,list(b=b), by="a"], dt)) stop("Test 142 failed") 

@@ -65,15 +65,12 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     }
     if (is.null(vnames)) vnames = rep("",length(x))
     vnames[is.na(vnames)] = ""
-    re = "^[a-zA-Z]+[a-zA-Z0-9_\\.]*$"  # valid column names. expressions can be built on column names so need to be strict here.
     novname = vnames==""
     if (any(!novname)) {
         if (any(vnames[!novname] %in% c(".SD",".SDF"))) stop("A column may not be called .SD or .SDF, those are reserved")
-        tt = regexpr(re, vnames[!novname]) < 1
-        if (any(tt)) stop("invalid explicit column name supplied (",paste('"',vnames[!novname][tt],'"',sep="",collapse=","),"). Must match regular expression ",re)
     }
     if (any(novname) && length(exptxt)==length(vnames)) {
-        okexptxt = regexpr(re, exptxt[novname])==1
+        okexptxt =  exptxt[novname] == make.names(exptxt[novname])
         vnames[novname][okexptxt] = exptxt[novname][okexptxt]
     }
     tt = vnames==""
@@ -122,7 +119,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     nr <- max(nrows)
     if (nr>0 && any(nrows==0)) stop("every input must have at least one value, unless all columns are empty")
     # So we can create an empty data.table, for inserting data later.  When some but not all columns are empty, you should put NA in the empty ones, to be silently filled to a column of NAs.
-        # TO DO - see if silent vector expansion is already done in C somewhere.
+    # TO DO - see if silent vector expansion is already done in C somewhere.
     for (i in (1:n)[nrows < nr]) {
         xi <- x[[i]]
         if (nr%%nrows[i] == 0) {
@@ -363,7 +360,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (mode(jsub)=="name") {
                 # j is a single unquoted column name, convenience to use to auto wrap it with list()
                 jvnames = deparse(jsub)
-                jsub = parse(text=paste("list(",jsub,")",sep=""))[[1]]               
+                jsub = parse(text=paste("list(`",jsub,"`)",sep=""))[[1]]  # the backtick is for when backtick'd names are passed in          
             } else if (as.character(jsub[[1]]) %in% c("list","DT")) {
                 jsubl = as.list(jsub)
                 if (length(jsubl)<2) stop("When j is list() or DT() we expect something inside the brackets")
@@ -375,7 +372,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 }
                 jsub = parse(text=paste("list(",paste(as.character(jsub)[-1],collapse=","),")",sep=""))[[1]]  # this does two things : i) changes 'DT' to 'list' for backwards compatibility and ii) drops the names from the list so its faster to eval the j for each group
             } # else maybe a call to transform or something which returns a list.
-            ws = unique(words(deparse(jsub)))
+            ws = all.vars(jsub)
             if (any(c(".SD",".SDF") %in% ws))
                 vars = colnames(x)        # just using .SD or .SDF triggers using all columns in the subset. We don't try and detect which columns of .SD are being used.
             else 
@@ -411,7 +408,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 testj = with(.SD, eval(jsub))
                 maxn=0
                 if (!is.null(testj)) {
-                    if (!is.list(testj) && (is.vector(testj) || is.factor(testj))) {
+                    #browser()
+                    if (is.atomic(testj)) {
                         jvnames = ""
                         jsub = parse(text=paste("list(",deparse(jsub),")",sep=""))[[1]]
                         testj = list(testj)
@@ -419,7 +417,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                         if (is.null(jvnames))   # if we didn't deliberately drop the names and store them earlier
                             jvnames = if (is.null(names(testj))) rep("",length(testj)) else names(testj)
                     } else {
-                        stop("j must evaluate to a vector, factor, list, or NULL")
+                        stop("j must evaluate to an atomic vector (inc factor, Date etc), list of atomic vectors, or NULL")
                     }
                     # if (!is.null(names(testj))) warning("j evaluates to a list with names. this is wasteful and likely avoidable")
                     maxn = max(sapply(testj,length))   # this could be 0 here too
@@ -450,9 +448,13 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
             names(ans) = c(names(byval), jvnames)
             ww = which(sapply(byval,is.factor))
-            for (jj in ww) {levels(ans[[ww]]) = levels(byval[[ww]]); class(ans[[ww]])="factor"}
+            for (jj in ww) {levels(ans[[jj]]) = levels(byval[[jj]]); class(ans[[jj]])="factor"}
             ww = which(sapply(testj,is.factor))
-            for (jj in ww) {levels(ans[[length(byval)+ww]]) = levels(testj[[ww]]); class(ans[[length(byval)+ww]])="factor"}
+            for (jj in ww) {levels(ans[[length(byval)+jj]]) = levels(testj[[jj]]); class(ans[[length(byval)+jj]])="factor"}
+            
+            # bit of a klude to retain the classes. Rather than allocating in C, we could allocate ans in R before dogroups, and create the right class at that stage
+            for (jj in seq_along(byval)) class(ans[[jj]]) = class(byval[[jj]])
+            for (jj in seq_along(testj)) class(ans[[length(byval)+jj]]) = class(testj[[jj]])            
 
             class(ans) = "data.table"
             if (!incbycols) {
@@ -505,28 +507,6 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
     class(ans) = "data.table"
     ans
 }
-
-# The comments below in [.factor are no longer true.  R 2.10.1 (and probably a lot earlier, maybe 2.6.0) does
-# not actually copy the factor levels (merely copies a pointer).
-# 
-# We now deprecate [.factor.
-#
-#"[.factor" = function(x, ...)
-#{
-#    # change default action of factors to drop unused levels. This saves memory space and copying. It also makes tapply() work as you expect since the levels contain the unique values only, otherwise you get many NAs for the unused factor levels.
-#    # The base::"[.factor" first creates the integer subset, but with the full levels attached (i.e. copied),  then *if* drop calls factor() on that to then remove the unused levels.
-#    # Here we force drop=TRUE for efficiency always (not changeable), and do the operation more efficiently.
-#    # If you really want R's default [.factor,  then call the base version directly using  base::"[.factor"()
-#    # This [.factor is within the data.table NAMESPACE so users should not see it.
-#    # R's default [.factor assings constrasts also. Not considered here.
-#    y <- NextMethod("[")
-#    u = unique(y)
-#    su = sort(u)
-#    attr(y, "levels") = attr(x, "levels")[su]  # relying on the original factor levels being sorted
-#    y[] = sortedmatch(y, su)
-#    class(y) = oldClass(x)
-#    y
-#}
 
 
 as.matrix.data.table = function(x,...)
@@ -888,9 +868,9 @@ rbind.data.table = function (...) {
     if (length(nm) && n>1) {
         for (i in 2:n) if (length(names(allargs[[i]])) && !all(names(allargs[[i]]) == nm)) warning("colnames of argument ",i," don't match colnames of argument 1")
     }
-    for (i in 1:length(allargs[[1]])) l[[i]] = unlist(lapply(allargs, "[[", i))
-    # for (i in 1:length(allargs[[1]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
-    # Used to be do.call("c",...) so that c.factor was called on factor columns. No longer.
+    # for (i in 1:length(allargs[[1]])) l[[i]] = unlist(lapply(allargs, "[[", i))
+    for (i in 1:length(allargs[[1]])) l[[i]] = do.call("c", lapply(allargs, "[[", i))
+    # This is why we currently still need c.factor.
     names(l) = nm
     class(l) = "data.table"
     return(l)
@@ -909,6 +889,7 @@ as.data.frame.data.table = function(x, ...)
 {
     attr(x,"row.names") = 1:nrow(x) # since R 2.4.0, data.frames can have non-character row names
     class(x) = "data.frame"
+    attr(x,"sorted") = NULL  # remove so if you convert to df, do something, and convert back, it's not sorted
     x
 }
 

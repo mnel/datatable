@@ -39,7 +39,6 @@ S3method(head, data.table)
 # take
 # time.taken
 # trim
-# vecref
 # which.first
 # which.last
-# words
+
