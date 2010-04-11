@@ -16,15 +16,21 @@ S3method(dim, data.table)
 S3method(dimnames, data.table)
 S3method("dimnames<-", data.table)
 S3method("$<-", data.table)
+S3method("[<-", data.table)
 S3method(duplicated, data.table)
 S3method(unique, data.table)
 S3method(merge, data.table)
 S3method(transform, data.table)
 S3method(within, data.table)
+S3method(subset, data.table)
+S3method(t, data.table)
+S3method(is.na, data.table)
 
 import(utils)
 S3method(tail, data.table)
 S3method(head, data.table)
+import(stats)
+S3method(na.omit, data.table)
 
 # [.factor
 # [<-.data.table

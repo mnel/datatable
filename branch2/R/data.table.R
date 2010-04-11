@@ -352,8 +352,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             ## At this point we want to be grouping (either by 'by', or by groups in i) and we know the groups and j will be run for each group
             ##
 
-            isfun <- try(is.function(j), silent = TRUE)
-            if (!inherits(isfun, "try-error") && isfun) stop("j may not be a function. Use the column names directly, or write an anonymous body wrapped in {}, or use subtable or subframe objects.")
+            ## isfun <- try(is.function(j), silent = TRUE)
+            ## if (!inherits(isfun, "try-error") && isfun) stop("j may not be a function. Use the column names directly, or write an anonymous body wrapped in {}, or use subtable or subframe objects.")
             # TO DO: if j was a function name and a column name was this name too,  check that above stop doesn't happen.
             # TO DO: check that is.function(j) on j directly rather than jsub is ok.
             jvnames = NULL
