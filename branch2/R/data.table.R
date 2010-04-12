@@ -609,8 +609,14 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE)
 
 as.data.table.data.table = function(x, keep.rownames=FALSE) return(x)
 
-head.data.table = function(x, n=6, ...) x[seq(len=min(n,nrow(x)))]
-tail.data.table = function(x, n=6, ...) x[seq(to=nrow(x), length=min(n, nrow(x)))]
+head.data.table = function(x, n=6, ...) {
+    i = seq(len=min(n,nrow(x)))
+    x[i]
+}
+tail.data.table = function(x, n=6, ...) {
+    i = seq(to=nrow(x), length=min(n, nrow(x)))
+    x[i]
+}
 
 # TO DO: [[ assignment
 

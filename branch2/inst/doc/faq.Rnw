@@ -1,12 +1,12 @@
 \documentclass[a4paper]{article}
 
-\usepackage[margin=2cm]{geometry}
+\usepackage[margin=3cm]{geometry}
 %%\usepackage[round]{natbib}
 \usepackage[colorlinks=true,urlcolor=blue]{hyperref}
 
 %%\newcommand{\acronym}[1]{\textsc{#1}}
 %%\newcommand{\class}[1]{\mbox{\textsf{#1}}}
-%%\newcommand{\code}[1]{\mbox{\texttt{#1}}}
+\newcommand{\code}[1]{\mbox{\texttt{#1}}}
 \newcommand{\pkg}[1]{{\normalfont\fontseries{b}\selectfont #1}}
 \newcommand{\proglang}[1]{\textsf{#1}}
 \SweaveOpts{keep.source=TRUE}
@@ -144,6 +144,39 @@ Yes. If your complex table is called DT, try DT[0].
 No. Despite the print method indicating otherwise. Strictly speaking its not possible to have is.null(data.table(NULL))
 returns FALSE.  Perhaps look at this?
 
+\subsection{Why has the DT alias been removed?}
+It hasn't been removed, yet. It is no longer encouraged or mentioned in the docs or examples. We now use and encourage
+list() to be passed as the j.  list() is a primitive and is much faster than passing DT() or data.table() as the j, especially when
+there are many groups.  Internally this was a non trivial change, but the speedups are very large.
+
+\subsection{What are the scoping rules for j expression?}
+Think of the subset as an environment where all the column names are
+variables. When a variable is used in the j expression, it is looked for in the following order :
+\begin{enumerate}
+\item The scope of the subset i.e. the column names
+\item The scope of the calling frame e.g. the line that appears before the data.table query
+\item TO CHECK. Does it ripple up or go straight to .GlobalEnv?
+\item The global environment
+\end{enumerate}
+This is ''lexical scoping'' explained by \href{http://cran.r-project.org/doc/FAQ/R-FAQ.html#Lexical-scoping}{R FAQ 3.3.1}.
+Note that the environment that the function was created is not relevant though, because no anonymous function is passed
+to the j. Note that an anonymous body can be passed to the j, for example:
+<<>>=
+DT = data.table(x=rep(c("a","b"),c(2,3)),y=1:5)
+DT
+DT[,{print(x);list(sum(y))},by="x"]
+@
+
+
+\section{When I run 'by' and trace the computation, why do I get one extra group at the beginning?"}
+Internally, the largest group is found, and the j expression run for that group. The result then determines how much
+memory need be allocated for the result, in one allocation before the j expression is run for each group.
+When you are returning data only, you will not notice this.
+If you are using 'by' for the side-effects, for example in Sweave output, and you get one extra graph
+at the beginning, then set byretn=0.
+<<>>=
+DT[,{cat("Trace:",as.character(x[1]),length(y),"\n");print(objects());NULL},by="x",byretn=0]
+@
 
 \section{Questions relating to compute time}
 

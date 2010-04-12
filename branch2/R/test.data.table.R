@@ -281,9 +281,12 @@ test.data.table = function()
     if (!identical(dt[,list(a=a), by="b"], dt[,2:1, with = FALSE])) stop("Test 141 failed")
     
     dt$a <- structure(as.integer(dt$a), class = "Date")
-    if (!identical(dt[,list(b=b), by="a"], dt)) stop("Test 142 failed") 
+    if (!identical(dt[,list(b=b), by="a"], dt)) stop("Test 142 failed")
+
+    dt = data.table(x=1:5,y=6:10)
+    if (!identical(tail(dt),dt)) stop("143 failed")  # tail was failing if a column name was called x.
    
-    cat("All 142 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
+    cat("All 143 tests in test.data.table() completed ok in",time.taken(started.at),"\n")
     # should normally complete in under 2 sec, unless perhaps if a gc was triggered
     invisible()
 }

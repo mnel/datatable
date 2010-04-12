@@ -198,7 +198,9 @@ rm(DT)
 gc()  # return memory to OS
 }
 
-# See over 90 further examples in \link{test.data.table}()
+# See over 140 further examples in \link{test.data.table}()
+test.data.table()
 
 }
 \keyword{ data }
+
