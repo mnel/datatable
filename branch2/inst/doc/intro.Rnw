@@ -179,7 +179,7 @@ ss=system.time(ans2 <- DT[data.table("R","h"),mult="all"]); ss
 identical(ans1,ans2)
 @
 
-At \Sexpr{sprintf("%0.3f",ss[3])}sec, this was {\bf\Sexpr{as.integer(tt[3]/ss[3])} times faster} than \Sexpr{sprintf("%0.3f",tt[3])}sec,
+At \Sexpr{sprintf("%0.3f",ss[3])}sec, this was {\bf\Sexpr{as.integer(tt[3]/ss[3])}} times faster than \Sexpr{sprintf("%0.3f",tt[3])}sec,
 and produced precisely the same result. If
 the phone book analogy helped, then this should not be surprising. We use the key. We take advantage of the fact that the table is sorted and
 we use binary search to find the matching rows. We didn't vector scan; we didn't use \code{==}.
@@ -230,7 +230,7 @@ head(ss)
 identical(as.vector(tt), ss$V1)
 @
 
-At \Sexpr{sprintf("%0.3f",sss[3])}sec, this was {\bf\Sexpr{as.integer(ttt[3]/sss[3])} times faster} than \Sexpr{sprintf("%0.3f",ttt[3])}sec,
+At \Sexpr{sprintf("%0.3f",sss[3])}sec, this was {\bf\Sexpr{as.integer(ttt[3]/sss[3])}} times faster than \Sexpr{sprintf("%0.3f",ttt[3])}sec,
 and produced precisely the same result.
 
 Lets group by two columns.
@@ -243,7 +243,7 @@ head(ss)
 identical(as.vector(t(tt)), ss$V1)
 @
 
-This was {\bf\Sexpr{as.integer(ttt[3]/sss[3])} times faster}, and the syntax a little simpler and easier to read.
+This was {\bf\Sexpr{as.integer(ttt[3]/sss[3])}} times faster, and the syntax a little simpler and easier to read.
 
 
 To return several expressions, pass a list() to j.

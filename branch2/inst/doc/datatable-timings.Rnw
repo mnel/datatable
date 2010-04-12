@@ -69,6 +69,10 @@ tt[3]
 ss[3]
 @
 
+<<results=tex>>=
+toLatex(sessionInfo())
+@
+
 \end{document}
 
 

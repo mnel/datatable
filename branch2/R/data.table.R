@@ -397,8 +397,10 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (length(o__)) itestj = o__[itestj] 
             .SD = x[itestj, vars, with=FALSE]   # single object we will re-use when grouping, for only the columns the j needs.
             xcols = as.integer(match(vars,colnames(x)))
-            # put back's x's levels, since the subset above dropped unused levels.  Just in case.
-            for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) levels(.SD[[col]]) = levels(x[[xcols[col]]])
+
+            # put back's x's levels, since the subset above dropped unused levels (no longer required)
+            # for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) levels(.SD[[col]]) = levels(x[[xcols[col]]])
+            
             # drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])   
             if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
             testj = NULL
@@ -443,7 +445,6 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             # TO DO : play with hash and size arguments of the new.env().
             if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
             if (byretn==0) return(NULL)  # user wanted side effects only (e.g. plotting).
-
             ww = which(jvnames=="")
             if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
             names(ans) = c(names(byval), jvnames)
@@ -466,7 +467,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                     setkey("ans",colnames(ans)[seq_along(byval)])
                 }
             }   
-            for (s in seq_len(ncol(ans))) if (is.factor(ans[[s]])) ans[[s]] = factor(ans[[s]])  # drop unused levels
+            # To delete .. for (s in seq_len(ncol(ans))) if (is.factor(ans[[s]])) ans[[s]] = factor(ans[[s]])  # drop unused levels
             return(ans)
             ##
             ## End of grouping
@@ -485,7 +486,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
         for (s in seq(along=j)) {
             # NA in the i are allowed, returning NA in those postions. 0 is allowed, returning no row for that position.
             ans[[s]] = x[[j[s]]][irows]
-            if (is.factor(ans[[s]])) ans[[s]] = factor(ans[[s]])  # drop unused levels
+            #To delete ... if (is.factor(ans[[s]])) ans[[s]] = factor(ans[[s]])  # drop unused levels
+            
             # ans[[s]] = if (length(dim(x[[j[s]]])) != 2) x[[j[s]]][irows] else x[[j[s]]][irows, , drop = FALSE]
             # TO DO : reinstate in future to allow data.table's to have a matrix as a column. Would be nice to have binary search on a key'd matrix.
         }
