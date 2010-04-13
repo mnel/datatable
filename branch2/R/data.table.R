@@ -17,12 +17,21 @@ print.data.table = function (x, digits = NULL, quote = FALSE, right = TRUE, nrow
             # TO DO: this warning seems to slow things down somewhere,  or could look at x by ref.
         }
         cn = if (nrow(x)>20) colnames(x) else NULL  # only print colnames at the bottom if over 20 rows
-        print(rbind(as.matrix(x),cn), digits=digits, quote=quote, right=right, ...)
-        #mm = do.call("cbind", lapply(x, format, digits=digits))
-        #print(mm, ..., quote = quote, right = right)
+        print(rbind(as.matrix(format.data.table(x, digits = digits, na.encode = FALSE)), cn),
+              digits=digits, quote=quote, right=right, ...)
     }
     invisible(x)
 }
+
+format.data.table <- function (x, ..., justify = "none") {
+    data.table(lapply(x,
+                      function(x) {
+                          res <- format(x, ..., justify = justify)
+                          class(res) <- "AsIs"
+                          res
+                      }))
+}
+
 
 is.data.table = function(x) inherits(x, "data.table")
 is.ff = function(x) inherits(x, "ff")  # define this in data.table so that we don't have to require(ff), but if user is using ff we'd like it to work
