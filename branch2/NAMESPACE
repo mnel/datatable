@@ -1,7 +1,8 @@
 useDynLib(data.table)
 
-export(data.table, tables, setkey, key, "key<-", J, CJ, SJ, DT)
+export(data.table, tables, setkey, key, "key<-", J, CJ, SJ)
 export(as.data.table,is.data.table,test.data.table,last,like,"%like%",between,"%between%")
+export(timetaken)
 
 S3method("[", data.table)
 S3method(print, data.table)
@@ -34,17 +35,13 @@ import(stats)
 S3method(na.omit, data.table)
 
 # [.factor
-# [<-.data.table
-# C
 # c.factor
-# dt
 # duplist
 # getdots
 # NCOL
 # NROW
 # sortedmatch
 # take
-# time.taken
 # trim
 # which.first
 # which.last

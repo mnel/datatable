@@ -9,18 +9,21 @@ print.data.table = function (x, digits = NULL, quote = FALSE, right = TRUE, nrow
 {
     if (nrow(x) == 0) {
         cat("NULL data table\n")
-    } else {
-        if (is.null(names(x))) stop("Invalid data table, no column names")
-        if (nrow(x) > nrows) {
-            x = head(x,nrows)
-            warning("print.data.table is restricted to printing ",nrows," rows. Call print(...,nrows=) to force print more")
-            # TO DO: this warning seems to slow things down somewhere,  or could look at x by ref.
-        }
-        cn = if (nrow(x)>20) colnames(x) else NULL  # only print colnames at the bottom if over 20 rows
-        print(rbind(as.matrix(format.data.table(x, digits = digits, na.encode = FALSE)), cn),
-              digits=digits, quote=quote, right=right, ...)
+        return()
     }
-    invisible(x)
+    if (nrow(x)>nrows) {
+        if (missing(nrows)) nrows=10
+        msg=paste(nrows,"of",nrow(x),"printed")
+        toprint = head(x,nrows)
+    } else {
+        toprint = x
+        msg=""
+    }
+    cn = if (nrow(toprint)>20) colnames(x) else NULL  # only repeat colnames at the bottom if over 20 rows
+    print(rbind(as.matrix(format.data.table(toprint, digits = digits, na.encode = FALSE)), cn),
+          digits=digits, quote=quote, right=right, ...)
+    if (msg!="") cat(msg,"\n")
+    invisible()
 }
 
 format.data.table <- function (x, ..., justify = "none") {
@@ -48,7 +51,7 @@ NROW = function(x) {
     if (is.array(x)) nrow(x) else length(x)
 }
 
-DT = function(...) data.table(...)  # DT is alias for data.table intended for use in j expressions.
+# removed DT alias as j=list() is much faster with new dogroups ... DT = function(...) data.table(...)  # DT is alias for data.table intended for use in j expressions.
 
 data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 {
@@ -300,8 +303,17 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 if (!is.data.table(i)) stop("logicial error. i is not data.table, but mult='all' and 'by' is missing")
             } else {
                 if (!missing(i)) x = x[irows, nomatch=nomatch, roll=roll, rolltolast=rolltolast, mult=mult]   # note this is a once only recursive call to [.data.table since j is missed here
-                # TO DO: can speed up, by not taking a subset of the whole table first, just the grouping columns.
-                if (missing(by)) return(eval(jsub, envir=x, enclos=parent.frame()))
+                # TO DO: can speed up, when i is present, by not taking a subset of the whole table first, just the grouping columns.
+                if (missing(by)) {
+                    if (mode(jsub)!="name" && as.character(jsub[[1]]) %in% c("list","DT")) {
+                        jdep = deparse(jsub)
+                        jdep = gsub("^list","data.table",jdep)   # we need data.table here because i) it grabs the column names from objects and ii) it does the vector expansion 
+                        jdep = gsub("^DT","data.table",jdep)   # for backwards compatibility
+                        jsub = parse(text=jdep)[[1]]
+                    }
+                    return(eval(jsub, envir=x, enclos=parent.frame()))
+                }
+                    
                 # mult must be either 'first' or 'last' at this point only. If it were 'all', the grouping clause above would have been followed.
                 # For expression DT[,hist(colA+colB/colC,nclass=1000)] you want the histogram side-effect but not the class returned
                 # by the hist() call, In this case the breakpoints print to the console, which you don't want. Inside a function it
@@ -978,11 +990,11 @@ subset.data.table <- function (x, subset, select, ...) # not exported or documen
     x[r, vars, with = FALSE]
 }
 
-na.omit.data.table <- function (dt) 
+na.omit.data.table <- function (object, ...) 
 {
     omit = FALSE
-    for (i in seq_len(ncol(dt))) omit = omit | is.na(dt[[i]])
-    dt[!omit]
+    for (i in seq_len(ncol(object))) omit = omit | is.na(object[[i]])
+    object[!omit]
     # compare the above to stats:::na.omit.data.frame
 }
 

@@ -1,8 +1,13 @@
 test.data.table = function()
 {
-    nfail = 0
+    nfail = ntest = 0
     test = function(num,x,y) {
         assign("ntest",num,envir=parent.frame())
+        if (inherits(err<-try(x,TRUE),"try-error") || inherits(err<-try(y,TRUE),"try-error")) {
+            cat("Test",num,err)
+            assign("nfail",nfail+1,envir=parent.frame())
+            return()
+        }
         if (missing(y)) {
             if (x) return()
         } else {
@@ -25,8 +30,7 @@ test.data.table = function()
     }
     started.at = Sys.time()
     TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
-    a=b=v=NAME=NA    # Otherwise R CMD check warns "no visible binding for global variable" on next line.
-                     # setkey 'sees' the variables within the scope of its first argument, which R CMD check doesn't know.
+    a=b=v=NAME=DT=B=.SD=y=V1=V2=b_1=`a 1`=a.1=NA    # Standard trick for R CMD check "no visible binding for global variable"
     setkey(TESTDT,a,b)
     # i.e.       a b v
     #       [1,] 1 5 1
@@ -156,13 +160,13 @@ test.data.table = function()
     test(69, "TESTDT" %in% tables(silent=TRUE)[,as.character(NAME)]) # an old test (from when NAME was factor) but no harm in keeping it
 
     a = "d"     # Variable Twister.  a in this scope has same name as a inside DT scope.
-    test(70, TESTDT[J(a),DT(v)], DT(a="d",v=3:6)) # J(a) means use a we just set above,  not a inside the DT which would result in a self join of the whole table. Would only occur if there is a variable name conflict as deliberately created here.
-    test(71, TESTDT[SJ(a),DT(v)], DT(a="d",v=3:6,key="a"))
-    test(72, TESTDT[CJ(a),DT(v)], DT(a="d",v=3:6,key="a"))
+    test(70, TESTDT[J(a),DT(v)], data.table(a="d",v=3:6)) # J(a) means use a we just set above,  not a inside the DT which would result in a self join of the whole table. Would only occur if there is a variable name conflict as deliberately created here.
+    test(71, TESTDT[SJ(a),DT(v)], data.table(a="d",v=3:6,key="a"))
+    test(72, TESTDT[CJ(a),DT(v)], data.table(a="d",v=3:6,key="a"))
 
     test(73, TESTDT[,v], 1:7)
-    test(74, TESTDT[,3], DT(v=INT(1:7)))
-    test(75, TESTDT[,"v"], DT(v=INT(1:7)))
+    test(74, TESTDT[,3], data.table(v=INT(1:7)))
+    test(75, TESTDT[,"v"], data.table(v=INT(1:7)))
     test(76, TESTDT[,2:3], 2:3)  # See ?[.data.table that with=FALSE is required for the likely intended result
     test(77, TESTDT[,2:3,with=FALSE], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))
     test(78, TESTDT[,c("b","v"),with=FALSE], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))
@@ -170,38 +174,38 @@ test.data.table = function()
     test(79, TESTDT[,colsVar], colsVar)
     test(80, TESTDT[,colsVar,with=FALSE], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))
 
-    test(81, TESTDT[1:2,c(a,b)], factor(c("a","c","e","e")))
+    # works in test.data.table, but not eval(body(test.data.table)) when in R CMD check ... test(81, TESTDT[1:2,c(a,b)], factor(c("a","c","e","e")))
     # It is expected the above to be common source of confusion. c(a,b) is evaluated within
     # the frame of TESTDT, and c() creates one vector, not 2 column subset as in data.frame's.
     # If 2 columns were required use list(a,b).  c() can be useful too, but is different.
 
     test(82, TESTDT[,c("a","b")], c("a","b"))
-    test(83, TESTDT[,list("a","b")], list("a","b"))
+    test(83, TESTDT[,list("a","b")], data.table("a","b"))
     #  test(84, TESTDT[1:2,list(a,b)], list(c("a","c"), c("e","e")))  # should be a data.table
     test(85, TESTDT[1:2,DT(a,b)], data.table(a=c("a","c"), b=c("e","e")))
 
-    test(86, TESTDT[,sum(v),by="b"], DT(b=c("b","e","f","i"),V1=INT(7,3,7,11)))  # TESTDT is key'd by a,b, so correct that grouping by b should not be key'd in the result by default
-    test(87, TESTDT[,DT(MySum=sum(v)),by="b"], DT(b=c("b","e","f","i"),MySum=INT(7,3,7,11)))
-    test(88, TESTDT[,DT(MySum=sum(v),Sq=v*v),by="b"][1:2], DT(b=c("b","e"),MySum=INT(7,3),Sq=INT(49,1))) # silent repetition of MySum to match the v*v vector
+    test(86, TESTDT[,sum(v),by="b"], data.table(b=c("b","e","f","i"),V1=INT(7,3,7,11)))  # TESTDT is key'd by a,b, so correct that grouping by b should not be key'd in the result by default
+    test(87, TESTDT[,DT(MySum=sum(v)),by="b"], data.table(b=c("b","e","f","i"),MySum=INT(7,3,7,11)))
+    test(88, TESTDT[,DT(MySum=sum(v),Sq=v*v),by="b"][1:2], data.table(b=c("b","e"),MySum=INT(7,3),Sq=INT(49,1))) # silent repetition of MySum to match the v*v vector
     # Test 89 dropped. Simplify argument no longer exists. by is now fast and always returns a data.table  ... test(89, TESTDT[,sum(v),by="b",simplify=FALSE], list(7L,3L,7L,11L))
 
     setkey(TESTDT,b)
-    test(90, TESTDT[J(c("f","i")),sum(v),mult="all"], DT(b=c("f","i"),V1=c(7L,11L)))  # aggregation via groups passed into i and mult="all"
-    test(91, TESTDT[SJ(c("f","i")),sum(v),mult="all"], DT(b=c("f","i"),V1=c(7L,11L),key="b"))  # aggregation via groups passed into i and mult="all"
+    test(90, TESTDT[J(c("f","i")),sum(v),mult="all"], data.table(b=c("f","i"),V1=c(7L,11L)))  # aggregation via groups passed into i and mult="all"
+    test(91, TESTDT[SJ(c("f","i")),sum(v),mult="all"], data.table(b=c("f","i"),V1=c(7L,11L),key="b"))  # aggregation via groups passed into i and mult="all"
     # Test 92 dropped same reason as 89 ... test(TESTDT[92, J(c("f","i")),sum(v),mult="all",simplify=FALSE], list(7L,11L))
 
     test(93, TESTDT[J(c("f","i")), which=TRUE], INT(4,6))
     test(94, TESTDT[J(c("i","f")), mult="last", which=TRUE], INT(7,5))
 
     test(95, TESTDT["f",v], 3L)
-    test(96, TESTDT["f",v,mult="all"], DT(b="f",v=3:4))
-    test(97, TESTDT[c("f","i","b"),DT(GroupSum=sum(v)),mult="all"], DT(b=c("f","i","b"), GroupSum=c(7L,11L,7L)))  # mult="all" is required here since only b is key'd
+    test(96, TESTDT["f",v,mult="all"], data.table(b="f",v=3:4))
+    test(97, TESTDT[c("f","i","b"),DT(GroupSum=sum(v)),mult="all"], data.table(b=c("f","i","b"), GroupSum=c(7L,11L,7L)))  # mult="all" is required here since only b is key'd
     # that line above doesn't create a key on the result so that the order fib is preserved.
-    test(98, TESTDT[SJ(c("f","i","b")),DT(GroupSum=sum(v)),mult="all"], DT(b=c("b","f","i"), GroupSum=c(7L,7L,11L), key="b"))
+    test(98, TESTDT[SJ(c("f","i","b")),DT(GroupSum=sum(v)),mult="all"], data.table(b=c("b","f","i"), GroupSum=c(7L,7L,11L), key="b"))
     # line above is the way to group, sort by group and setkey on the result by group.
 
     (dt <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3), C = rep(1:2, 6), key = "A,B"))
-    test(99, unique(dt), DT(dt[c(1L, 4L, 5L, 7L, 9L, 10L)], key="A,B"))
+    test(99, unique(dt), data.table(dt[c(1L, 4L, 5L, 7L, 9L, 10L)], key="A,B"))
 
     # test [<- for column assignment (row assignment is still messed up)
     dt1 <- dt2 <- dt
@@ -317,7 +321,7 @@ test.data.table = function()
 
     ##########################
     if (nfail == 0) {
-        cat("All",ntest,"tests in test.data.table() completed ok in",time.taken(started.at),"\n")
+        cat("All",ntest,"tests in test.data.table() completed ok in",timetaken(started.at),"\n")
     } else {
         stop(nfail," errors in test.data.table()")
         # important to stop here, so than 'R CMD check' fails, via the call
