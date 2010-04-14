@@ -27,6 +27,7 @@ S3method(subset, data.table)
 S3method(t, data.table)
 S3method(is.na, data.table)
 S3method(format, data.table)
+S3method(Ops, data.table)
 
 import(utils)
 S3method(tail, data.table)
