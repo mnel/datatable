@@ -177,7 +177,7 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
 }
 
 
-"[.data.table" = function (x, i, j, by=NULL, with=TRUE, nomatch=NA, mult="first", roll=FALSE, rolltolast=FALSE, which=FALSE, incbycols=TRUE, bysameorder=FALSE, byretn=NULL, verbose=getOption("datatable.verbose",FALSE))
+"[.data.table" = function (x, i, j, by=NULL, with=TRUE, nomatch=NA, mult="first", roll=FALSE, rolltolast=FALSE, which=FALSE, bysameorder=FALSE, verbose=getOption("datatable.verbose",FALSE))
 {
     # To add to documentation: DT[i,"colA"] will return a one-column data.table. To get a vector do DT[i,"colA"][[1]].  Neater than DT[i,"colA",drop=TRUE]. Instead of DT[,"colA"][[1]], just do DT$colA, if there is no subset i required.
     if (!missing(by) && missing(j)) stop("'by' is supplied but not j")
@@ -381,7 +381,8 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             if (mode(jsub)=="name") {
                 # j is a single unquoted column name, convenience to use to auto wrap it with list()
                 jvnames = deparse(jsub)
-                jsub = parse(text=paste("list(`",jsub,"`)",sep=""))[[1]]  # the backtick is for when backtick'd names are passed in          
+                jsub = call("list",jsub)
+                #jsub = parse(text=paste("list(`",jsub,"`)",sep=""))[[1]]  # the backtick is for when backtick'd names are passed in          
             } else if (as.character(jsub[[1]]) %in% c("list","DT")) {
                 jsubl = as.list(jsub)
                 if (length(jsubl)<2) stop("When j is list() or DT() we expect something inside the brackets")
@@ -391,14 +392,18 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                     if (jvnames[jj-1] == "" && mode(jsubl[[jj]])=="name") jvnames[jj-1] = deparse(jsubl[[jj]])
                     # TO DO: if call to a[1] for example, then call it 'a' too
                 }
-                jsub = parse(text=paste("list(",paste(as.character(jsub)[-1],collapse=","),")",sep=""))[[1]]  # this does two things : i) changes 'DT' to 'list' for backwards compatibility and ii) drops the names from the list so its faster to eval the j for each group
+                if(class(jsubl[[2]])!="{") jsub = parse(text=paste("list(",paste(as.character(jsub)[-1],collapse=","),")",sep=""))[[1]]  # this does two things : i) changes 'DT' to 'list' for backwards compatibility and ii) drops the names from the list so its faster to eval the j for each group
             } # else maybe a call to transform or something which returns a list.
             ws = all.vars(jsub)
             if (any(c(".SD",".SDF") %in% ws))
                 vars = colnames(x)        # just using .SD or .SDF triggers using all columns in the subset. We don't try and detect which columns of .SD are being used.
             else 
                 vars = ws[ws %in% c(colnames(x))]  # using a few named columns will be faster
-            if (!length(vars)) stop("No column names appear in j expression. No use of .SD or .SDF either.")
+            if (!length(vars)) {
+                # stop("No column names appear in j expression. No use of .SD or .SDF either.")
+                # For macros :
+                vars=colnames(x)
+            }
             if (mult=="all") {
                 ####
                 #### TO DO -  revisit JIS w.r.t. dogroups logic
@@ -413,56 +418,49 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
                 }
             }
 
-            biggest = which.max(len__)
-            itestj = seq(f__[biggest],length=len__[biggest])  # we use the biggest group to test properties of j
-            if (length(o__)) itestj = o__[itestj] 
-            .SD = x[itestj, vars, with=FALSE]   # single object we will re-use when grouping, for only the columns the j needs.
-            xcols = as.integer(match(vars,colnames(x)))
-
-            # put back's x's levels, since the subset above dropped unused levels (no longer required)
-            # for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) levels(.SD[[col]]) = levels(x[[xcols[col]]])
             
-            # drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])   
             if (verbose) {last.started.at=proc.time()[3];cat("Starting dogroups ... ");flush.console()}
-            testj = NULL
-            if (missing(byretn) || byretn=="fixed") {
-                # byretn is all about trying to allocate the right amount of memory for the result, first time. Then there
-                # will be no need to grow it as the 'by' proceeds, or use memory for a temporary list of the results.
-                testj = with(.SD, eval(jsub))
-                maxn=0
-                if (!is.null(testj)) {
-                    #browser()
-                    if (is.atomic(testj)) {
-                        jvnames = ""
-                        jsub = parse(text=paste("list(",deparse(jsub),")",sep=""))[[1]]
-                        testj = list(testj)
-                    } else if (is.list(testj)) {
-                        if (is.null(jvnames))   # if we didn't deliberately drop the names and store them earlier
-                            jvnames = if (is.null(names(testj))) rep("",length(testj)) else names(testj)
-                    } else {
-                        stop("j must evaluate to an atomic vector (inc factor, Date etc), list of atomic vectors, or NULL")
-                    }
-                    # if (!is.null(names(testj))) warning("j evaluates to a list with names. this is wasteful and likely avoidable")
-                    maxn = max(sapply(testj,length))   # this could be 0 here too
+            # byretn is all about trying to allocate the right amount of memory for the result, first time. Then there
+            # will be no need to grow it as the 'by' proceeds, or use memory for a temporary list of the results.
+            itestj = seq(f__[1],length=len__[1])
+            if (length(o__)) itestj = o__[itestj]
+            .SD = x[itestj, vars, with=FALSE]
+            testj = with(.SD, eval(jsub))    # our test is now the first group. problems before with the largest being repeated.
+            maxn=0
+            if (!is.null(testj)) {
+                if (is.atomic(testj)) {
+                    jvnames = ""
+                    jsub = call("list",jsub)
+                    # jsub = parse(text=paste("list(",deparse(jsub),")",sep=""))[[1]]
+                    testj = list(testj)
+                } else if (is.list(testj)) {
+                    if (is.null(jvnames))   # if we didn't deliberately drop the names and store them earlier
+                        jvnames = if (is.null(names(testj))) rep("",length(testj)) else names(testj)
+                } else {
+                    stop("j must evaluate to an atomic vector (inc factor, Date etc), list of atomic vectors, or NULL")
                 }
-                if (maxn==0) stop("byretn was missing or 'fixed' so I ran j on the largest group, to determine how many rows to allocate for the result, but j returned no rows. If you are using 'by' for the side effects only of j (e.g. plotting) then please rerun with byretn=0. Or change j so it always returns some rows (one row of aggregate data is the norm). Or if this is correct, and other groups (other than the largest) may return data then set byretn to 'ngroup'") # the user won't want the biggest group plotted first, and then repeated later, so they have to rerun anyway
-            }
-            if (missing(byretn)) {
-                byretn = if (maxn==1) length(f__)   # Most common case 1 : j is a list of simple aggregates i.e. list of atoms only
-                else if (maxn==length(itestj)) sum(len__)  # Most common case 2 : j returns as many rows as there are in the group (maybe a join)
-                else sum(len__)  # we might over allocate here, and if so user will be warned and setting 'byretn' to 'fixed' or a numer may be more efficient.
-                # else if (maxn>length(itestj)) stop("I have run j on the largest group (",length(itestj)," rows) but j returned a list in which one or more vectors was longer than that (",maxn,"). If this is really correct, please set the 'byretn' argument appropriately and run again. See FAQs.")
-                # else stop("I have run j on the largest group (",length(itestj)," rows) but j returned a list in which one or more vectors are length ",maxn,"). If this is really correct, please set the 'byretn' argument to either 'fixed' or 'ngroup' and run again. See FAQs.")
+                # if (!is.null(names(testj))) warning("j evaluates to a list with names. this is wasteful and likely avoidable")
+                maxn = max(sapply(testj,length))   # this could be 0 here too
             } else {
-                if (length(byretn)!=1) stop("byretn is not length 1, it is length ",length(byretn))
-                if (is.character(byretn)) {
-                    byretn = switch(byretn, "fixed"=maxn*length(f__), "ngroup"=sum(len__), stop("When byret is supplied it must be either 'fixed' or 'ngroup'"))
-                    # 'fixed' : say if 2 rows are returned per group e.g. beta and tstat if user prefers them as rows rather than cols
-                    # 'ngroup' : up to as many rows in each group, but maybe 
-                }
+                maxn = 0
+                # e.g. if j is for side effects only: printing or plotting
             }
-            byretn = as.integer(byretn)
+            byretn = if (maxn == 0) 0
+                     else if (maxn==1 && len__[1]>1) length(f__)   # Most common case 1 : j is a list of simple aggregates i.e. list of atoms only
+                     else if (maxn==len__[1]) sum(len__)  # Most common case 2 : j returns as many rows as there are in the group (maybe a join)
+                     else sum(len__)
+            # TO DO: we might over allocate above e.g. if first group has 1 row and j is actually a single row aggregate
+            # TO DO: user warning when it detects over-allocation is currently off in dogroups.c
+                
+            byretn = as.integer(byretn) 
+            .SD = x[seq(length=max(len__)), vars, with=FALSE]  # allocate enough for largest group, will re-use it, the data contents doesn't matter at this point
+            # the subset above keeps factor levels in full
+            # TO DO: drop factor levels altogether (as option later) ... for (col in 1:ncol(.SD)) if(is.factor(.SD[[col]])) .SD[[col]] = as.integer(.SD[[col]])
+            xcols = as.integer(match(vars,colnames(x)))
+            #browser()
+            
             ans = .Call("dogroups",x,.SD,xcols,o__,f__,len__,jsub,new.env(parent=parent.frame()),testj,byretn,byval,PACKAGE="data.table")
+            
             # TO DO : play with hash and size arguments of the new.env().
             if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
             if (byretn==0) return(NULL)  # user wanted side effects only (e.g. plotting).
@@ -479,15 +477,15 @@ data.table = function(..., keep.rownames=FALSE, check.names = TRUE, key=NULL)
             for (jj in seq_along(testj)) class(ans[[length(byval)+jj]]) = class(testj[[jj]])            
 
             class(ans) = "data.table"
-            if (!incbycols) {
-                warning("Removing by cols now for backwards compatibility. incbycols will be deprecated in future since 'by' is now fast.")
-                ans = ans[,-seq_len(length(byval)),with=FALSE]
-            } else {
+            #if (!incbycols) {
+            #    warning("Removing by cols now for backwards compatibility. incbycols will be deprecated in future since 'by' is now fast.")
+            #    ans = ans[,-seq_len(length(byval)),with=FALSE]
+            #} else {
                 if ((!missing(by) && bysameorder) || (!missing(i) && haskey(i))) {
                     # either a spliced join, likely i was SJ() or a table already with a key,  or a by to the key columns in order
                     setkey("ans",colnames(ans)[seq_along(byval)])
                 }
-            }   
+            #}   
             # To delete .. for (s in seq_len(ncol(ans))) if (is.factor(ans[[s]])) ans[[s]] = factor(ans[[s]])  # drop unused levels
             return(ans)
             ##

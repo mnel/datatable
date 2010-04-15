@@ -170,14 +170,14 @@ DT[,{print(x);list(sum(y))},by="x"]
 @
 
 
-\section{When I run 'by' and trace the computation, why do I get one extra group at the beginning?"}
-Internally, the largest group is found, and the j expression run for that group. The result then determines how much
-memory need be allocated for the result, in one allocation before the j expression is run for each group.
-When you are returning data only, you will not notice this.
-If you are using 'by' for the side-effects, for example in Sweave output, and you get one extra graph
-at the beginning, then set byretn=0.
+\subsection{Can I trace my code as it runs through the groups?}
+Try something this :
 <<>>=
-DT[,{cat("Trace:",as.character(x[1]),length(y),"\n");print(objects());NULL},by="x",byretn=0]
+DT[,{
+  cat("Trace:",as.character(x[1]),length(y),"\n");
+  print(objects());
+  sum(y)
+},by=x]
 @
 
 \section{Questions relating to compute time}
@@ -185,19 +185,23 @@ DT[,{cat("Trace:",as.character(x[1]),length(y),"\n");print(objects());NULL},by="
 \subsection{I have 20 columns in data.table x.  Why is x[,sum(V1),by=grp] so quick?}
 Several reasons.
 \begin{itemize}
-\item Only the V1 column is grouped, the other 19 are ignored because the j expression doesn't use them.
-\item One memory allocation is made for the largest group of V1 only,  then that memory is re-used for the other groups, there is very little garbage to collect
-\item R is an in memory column store i.e. V1 is contiguous in RAM and page fetches from RAM into L2 are minimised.
+\item Only the V1 column is grouped, the other 19 are ignored because \code{data.table} detects that j expression doesn't use them.
+\item One memory allocation is made for the largest group of V1 only,  then that memory is re-used for the other groups, there is very little garbage to collect.
+\item R is an in memory column store i.e. V1 is contiguous in RAM. Page fetches from RAM into L2 cache are minimised.
 \end{itemize}
+
+\subsection{I don't have a key on a large table, but grouping is still really quick. Why is that?}
+data.table uses radix sorting for integer vectors. This is significantly faster than other sort algorithims.
+Unfortunately radix is restricted to integer only. See {?sort.list(method="radix")}.
+This is also one reason why \code{setkey()} is quick.
 
 
 \section{General questions about the package}
 
-\subsection{Why is v1.3 missing from the CRAN archive ?}
-This is correct. v1.2 was released to CRAN in Aug 2008. Development of v1.3 then continued on r-forge. Any user that made
-contact with us was pointed to the r-forge version, as were users on r-help on several occassions. These users were very
-helpful in testing major enhancements. When 1.3 was ready for CRAN, we decided to mark it v1.4, so that users of
-various versions of 1.3 would know to upgrade.
+\subsection{v1.3 appears to be missing from the CRAN archive ?}
+That is correct. v1.2 was released to CRAN in Aug 2008. Development of v1.3 then continued on r-forge, from
+which users installed the latest nightly build, and were very helpful giving feedback and suggestions. As
+many versions of v1.3 are in use, we released v1.4 to CRAN as a clean line in the sand.
 From now on our hope is to have a more regular release cycle to CRAN.
 
 \subsection{Is data.table compatible with S-plus ?}

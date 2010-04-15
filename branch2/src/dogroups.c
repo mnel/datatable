@@ -20,7 +20,7 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
     if (INTEGER(starts)[0]<1 || INTEGER(lens)[0]<1) error("starts[1]<1 or lens[1]<1");
     if(!isEnvironment(env)) error("’env’ should be an environment");
     ngrp = length(starts);  // the number of groups
-    njval = length(testj);
+    njval = length(testj);  // testj is now the result of j on the first group
     nbyval = length(byval);
     names = getAttrib(SD, R_NamesSymbol);
     // only the subset of column names that the j expression uses exist in SD, or if
@@ -81,9 +81,38 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
                 error("only integer,double,logical and character vectors are allowed in j expressions when 'by' is used. Type %d would need to be added.", TYPEOF(VECTOR_ELT(testj, i)));
         }
     }
-
+    
+    // copy existing result for first group into ans
     ansloc = 0;
-    for(i = 0; i < ngrp; i++) {
+    maxn = 0;
+    for (j=0; j<njval; j++) {
+        thislen = LENGTH(VECTOR_ELT(testj,j));
+        maxn = thislen>maxn ? thislen : maxn;
+    }
+    // if maxn is 0 the following loops will fall through  (for side-effect only j)
+    if (ansloc + maxn > INTEGER(byretn)[0]) error("Didn't allocate enough rows for result of first group.");
+    for (j=0; j<nbyval; j++) {
+        for (r=0; r<maxn; r++) {
+        memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*INTEGER(bysizes)[j],
+               (char *)DATAPTR(VECTOR_ELT(byval,j)) + 0*INTEGER(bysizes)[j],    // this is why byval must be subset in the calling R to the first row of each group, to be consistent with i join grouping
+               1 * INTEGER(bysizes)[j]);
+        }
+    }
+    for (j=0; j<njval; j++) {
+        thisansloc = ansloc;
+        thislen = LENGTH(VECTOR_ELT(testj,j));
+        if (maxn%thislen != 0) error("maxn (%d) is not exact multiple of this j column's length (%d)",maxn,thislen); 
+        for (r=0; r<(maxn/thislen); r++) {
+            memcpy((char *)DATAPTR(VECTOR_ELT(ans,j+nbyval)) + thisansloc*INTEGER(jsizes)[j],
+                   (char *)DATAPTR(VECTOR_ELT(testj,j)),
+                   thislen * INTEGER(jsizes)[j]);
+            thisansloc += thislen;
+        }
+    }
+    // end copy of testj into result
+    ansloc += maxn;
+    
+    for(i = 1; i < ngrp; i++) {  // 2nd group onwards
         if (length(order)==0) {
             for (j=0; j<length(SD); j++) {
                 memcpy((char *)DATAPTR(VECTOR_ELT(SD,j)),
@@ -110,6 +139,7 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
             if (TYPEOF(VECTOR_ELT(jval, j)) != TYPEOF(VECTOR_ELT(ans, j+nbyval))) error("columns of j don't evaluate to consistent types for each group");
         }
         if (ansloc + maxn > INTEGER(byretn)[0]) error("Didn't allocate enough rows. Must grow ans (to implement as we don't want default slow grow)");
+        // TO DO: implement R_realloc(?) here
         for (j=0; j<nbyval; j++) {
             for (r=0; r<maxn; r++) {
             memcpy((char *)DATAPTR(VECTOR_ELT(ans,j)) + (ansloc+r)*INTEGER(bysizes)[j],
@@ -133,7 +163,7 @@ SEXP dogroups(SEXP dt, SEXP SD, SEXP dtcols, SEXP order, SEXP starts, SEXP lens,
     }
     if (ansloc > INTEGER(byretn)[0]) error("Logical error as we should have stopped above before writing the last jval");
     if (ansloc < INTEGER(byretn)[0]) {
-        warning("Wrote less rows than allocated. byretn=%d but wrote %d rows",INTEGER(byretn)[0],ansloc);
+        // warning("Wrote less rows than allocated. byretn=%d but wrote %d rows",INTEGER(byretn)[0],ansloc);
         for (j=0; j<length(ans); j++) SETLENGTH(VECTOR_ELT(ans,j),ansloc);
     }
     UNPROTECT(4);

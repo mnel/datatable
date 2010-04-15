@@ -8,8 +8,8 @@
 \usage{
 \method{[}{data.table}(x, i, j, by=NULL, with=TRUE, nomatch = NA,
   mult = "first", roll = FALSE, rolltolast = FALSE,
-  which = FALSE, incbycols = TRUE, bysameorder = FALSE,
-  byretn=NULL, verbose=getOption("datatable.verbose",FALSE))
+  which = FALSE, bysameorder = FALSE,
+  verbose=getOption("datatable.verbose",FALSE))
 }
 \arguments{
   \item{x}{ A data.table }
@@ -55,12 +55,10 @@ The remaining arguments below are only applicable for joins i.e. when i is a dat
 
   \item{which}{ By default the subset of rows in x matching i are returned. TRUE returns the row numbers only as a vector. These row numbers can be stored and passed in as the i directly in further data.table queries for efficiency, or used in further logic. }
 
-  \item{incbycols}{ Advanced. By default the groups created by the by expression are returned as the first column(s) of the result. The alternative way to group is by passing groups in the i data.table if the grouping corresponds to x's key and setting mult="all". FALSE omits the i columns from the result for efficiency in the 2nd case when writing multiple queries with the same grouping. }
+%%  \item{incbycols}{ Advanced. By default the groups created by the by expression are returned as the first column(s) of the result. The alternative way to group is by passing groups in the i data.table if the grouping corresponds to x's key and setting mult="all". FALSE omits the i columns from the result for efficiency in the 2nd case when writing multiple queries with the same grouping. }
 
   \item{bysameorder}{ Advanced. The by expression creates a data.table internally which is then key'd and passed in as the i clause using SJ() ( possibly created a different order of the groups than they appear in the table) and mult set to "all". But when groups are passed into i directly \code{bysameorder=TRUE} saves the \code{setkey} for efficiency. }
   
-  \item{byretn}{ About to be removed }
-
   \item{verbose}{ TRUE turns on status and information mesages to the console in an attempt to aid debugging. }
 }
 \details{

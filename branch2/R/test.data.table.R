@@ -59,7 +59,7 @@ test.data.table = function()
     test(14, TESTDT[SJ(c(-3,2,4,4,5,7,8)),v,mult="last",roll=TRUE], INT(NA,1,6,6,6,7,7))
     test(15, TESTDT[SJ(c(-3,2,4,4,5,7,8)),v,mult="last",nomatch=0], INT(6,6,7))
     test(16, TESTDT[SJ(c(4)),v][[2]], INT(3,4,5,6))
-    test(17, suppressWarnings(TESTDT[SJ(c(4,4)),v,mult="all",incbycols=FALSE][[1]]), INT(3:6,3:6))
+    #test(17, suppressWarnings(TESTDT[SJ(c(4,4)),v,mult="all",incbycols=FALSE][[1]]), INT(3:6,3:6))
     test(18, TESTDT[SJ(c(-3,2,4,8)),v,mult="all"][[2]], INT(3:6))
     test(19, TESTDT[SJ(c(-3,2,4,8)),v,mult="all",roll=TRUE][[2]], INT(1,3:6,7))
     test(20, TESTDT[SJ(c(-3,2,4,8)),v,mult="all",rolltolast=TRUE][[2]], INT(1,3:6))
@@ -96,7 +96,7 @@ test.data.table = function()
     test(41, TESTDT[J(c(4,4)),v,mult="all"][[2]], INT(3:6,3:6))
     test(42, TESTDT[J(c(8,2,4,-3)),v,mult="all"][[2]], INT(3:6))
     test(43, TESTDT[J(c(8,2,4,-3)),v,mult="all",roll=TRUE][[2]], INT(7,1,3:6))
-    test(44, suppressWarnings(TESTDT[J(c(8,4,2,-3)),v,mult="all",rolltolast=TRUE,incbycols=FALSE][[1]]), INT(3:6,1))
+    #test(44, suppressWarnings(TESTDT[J(c(8,4,2,-3)),v,mult="all",rolltolast=TRUE,incbycols=FALSE][[1]]), INT(3:6,1))
     test(45, TESTDT[J(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all"][[3]], INT(1,3:4))
     test(46, TESTDT[J(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",roll=TRUE][[3]], INT(1,3:4,4,6))
     test(47, TESTDT[J(c(-9,1,4,4,4,4,8),c(1,5,5,6,7,10,3)),v,mult="all",rolltolast=TRUE][[3]], INT(1,3:4,4))
@@ -317,7 +317,13 @@ test.data.table = function()
     tt = data.table(b=LETTERS[1:4],a=3L,b=LETTERS[1:4], b2=LETTERS[1:4])
     colnames(tt)[3] = "b"
     test(144, dt[, .SD[3,], by=b], tt)
-
+    
+    DT = data.table(x=rep(c("a","b"),c(2,3)),y=1:5)
+    test(145, DT[,{print(x);sum(y)},by=x], data.table(x=c("a","b"),V1=c(3L,12L)))
+    
+    tt = try(DT[,MySum=sum(v)], silent=TRUE)    # Feature Request #204 to detect the error
+    test(146, inherits(t,"try-error") && length(grep("unused argument", tt)))   # user meant DT[,list(MySum=sum(v))]
+    
 
     ##########################
     if (nfail == 0) {
