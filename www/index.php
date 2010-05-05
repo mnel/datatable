@@ -29,23 +29,39 @@ echo '<?xml version="1.0" encoding="UTF-8"?>';
 <a href="/"><img src="<?php echo $themeroot; ?>/images/logo.png" border="0" alt="R-Forge Logo" /> </a> </td> </tr>
 </table>
 
-
-<!-- get project title  -->
 <!-- own website starts here, the following may be changed as you like -->
 
-<?php if ($handle=fopen('http://'.$domain.'/export/projtitl.php?group_name='.$group_name,'r')){
-$contents = '';
-while (!feof($handle)) {
-	$contents .= fread($handle, 8192);
-}
-fclose($handle);
-echo $contents; } ?>
+<h2>Welcome to data.table project!</h2>
+
+<p>Fast subset, fast grouping and fast merge in a short and flexible syntax, for faster development.</p>
+
+<p>Example: <code>data[a>3,sum(b*c),by=d]</code> where data has 4 columns (a,b,c,d).</p>
+
+<p><ul><li>10+ times faster than <code>tapply()</code></li>
+<li>100+ times faster than <code>==</code></li></ul></p>
 
 <!-- end of project description -->
 
-<p> No content added. </p>
+<p>Latest stable release: <a href="http://cran.r-project.org/package=data.table"><strong>1.4.1 on CRAN</strong></a></p>
 
-<p> The <strong>project summary page</strong> you can find <a href="http://<?php echo $domain; ?>/projects/<?php echo $group_name; ?>/"><strong>here</strong></a>. </p>
+<p><a href="http://cran.r-project.org/web/packages/data.table/vignettes/datatable-faq.pdf"><strong>FAQs</strong></a></p>
+
+<p><a href="http://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.pdf"><strong>10 minute introduction</strong></a></p>
+
+<p><a href="http://cran.r-project.org/web/packages/data.table/vignettes/datatable-timings.pdf"><strong>Reproducible timings</strong></a></p>
+
+<p>Presentations:</p>
+<ul><li><a href="http://files.meetup.com/1406240/Data%20munging%20with%20SQL%20and%20R.pdf"><strong>Data munging with SQL and R</strong></a></li>
+<li><a href="http://www.londonr.org/LondonR-20090331/data.table.LondonR.pdf"><strong>Higher speed time series queries</strong></a></li></ul>
+
+<p><a href="http://www.youtube.com/watch?v=rvT8XThGA8o"><strong>YouTube Demo (8 mins)</strong></a></p>
+
+<p><a href="http://crantastic.org/packages/data-table"><strong>User reviews</strong></a></p>
+
+<p><a href="http://lists.r-forge.r-project.org/cgi-bin/mailman/listinfo/datatable-help"><strong>datatable-help</strong></a></p>
+
+<p><a href="http://r-forge.r-project.org/projects/datatable/"><strong>Development summary page</strong></a></p>
 
 </body>
 </html>
+
