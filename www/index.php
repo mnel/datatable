@@ -60,7 +60,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>';
 <p><a href="http://r-forge.r-project.org/projects/datatable/"><strong>Development summary on r-forge</strong></a></p>
 
 <p><a href="http://www.youtube.com/watch?v=rvT8XThGA8o"><strong>YouTube Demo (8 mins)</strong></a></p>
-<object width="960" height="745"><param name="movie" value="http://www.youtube.com/v/rvT8XThGA8o&amp;hl=en_GB&amp;fs=1?hd=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/rvT8XThGA8o&amp;hl=en_GB&amp;fs=1?hd=1" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="960" height="745"></embed></object>
+<object width="480" height="370"><param name="movie" value="http://www.youtube.com/v/rvT8XThGA8o&amp;hl=en_GB&amp;fs=1?hd=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/rvT8XThGA8o&amp;hl=en_GB&amp;fs=1?hd=1" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="480" height="370"></embed></object>
 
 </body>
 </html>
