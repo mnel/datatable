@@ -44,23 +44,23 @@ echo '<?xml version="1.0" encoding="UTF-8"?>';
 
 <p>Latest stable release: <a href="http://cran.r-project.org/package=data.table"><strong>1.4.1 on CRAN</strong></a></p>
 
-<p><a href="http://cran.r-project.org/web/packages/data.table/vignettes/datatable-faq.pdf"><strong>FAQs</strong></a></p>
-
-<p><a href="http://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.pdf"><strong>10 minute introduction</strong></a></p>
-
-<p><a href="http://cran.r-project.org/web/packages/data.table/vignettes/datatable-timings.pdf"><strong>Reproducible timings</strong></a></p>
+<p>Vignettes:</p>
+<ul><li><a href="http://cran.r-project.org/web/packages/data.table/vignettes/datatable-faq.pdf"><strong>FAQs</strong></a></li>
+<li><a href="http://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.pdf"><strong>10 minute quick start introduction</strong></a></li>
+<li><a href="http://cran.r-project.org/web/packages/data.table/vignettes/datatable-timings.pdf"><strong>Reproducible timings</strong></a></li></ul>
 
 <p>Presentations:</p>
-<ul><li><a href="http://files.meetup.com/1406240/Data%20munging%20with%20SQL%20and%20R.pdf"><strong>Data munging with SQL and R</strong></a></li>
-<li><a href="http://www.londonr.org/LondonR-20090331/data.table.LondonR.pdf"><strong>Higher speed time series queries</strong></a></li></ul>
-
-<p><a href="http://www.youtube.com/watch?v=rvT8XThGA8o"><strong>YouTube Demo (8 mins)</strong></a></p>
+<ul><li><a href="http://files.meetup.com/1406240/Data%20munging%20with%20SQL%20and%20R.pdf"><strong>Data munging with SQL and R</strong></a>, Joshua Reich, Jan 2010</li>
+<li><a href="http://www.londonr.org/LondonR-20090331/data.table.LondonR.pdf"><strong>Higher speed time series queries</strong></a>, Matthew Dowle, Jul 2009</li></ul>
 
 <p><a href="http://crantastic.org/packages/data-table"><strong>User reviews</strong></a></p>
 
 <p><a href="http://lists.r-forge.r-project.org/cgi-bin/mailman/listinfo/datatable-help"><strong>datatable-help</strong></a></p>
 
-<p><a href="http://r-forge.r-project.org/projects/datatable/"><strong>Development summary page</strong></a></p>
+<p><a href="http://r-forge.r-project.org/projects/datatable/"><strong>Development summary on r-forge</strong></a></p>
+
+<p><a href="http://www.youtube.com/watch?v=rvT8XThGA8o"><strong>YouTube Demo (8 mins)</strong></a></p>
+<object width="960" height="745"><param name="movie" value="http://www.youtube.com/v/rvT8XThGA8o&amp;hl=en_GB&amp;fs=1?hd=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/rvT8XThGA8o&amp;hl=en_GB&amp;fs=1?hd=1" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="960" height="745"></embed></object>
 
 </body>
 </html>
