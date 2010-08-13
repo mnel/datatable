@@ -21,7 +21,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>';
 	<link href="<?php echo $themeroot; ?>styles/estilo1.css" rel="stylesheet" type="text/css" />
   </head>
 
-<frameset cols="*,300">
+<frameset cols="*,310">
   <frame src="left.htm" />
   <frame src="right.htm" noresize="noresize"/>
 </frameset>
