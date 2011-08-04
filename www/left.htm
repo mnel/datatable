@@ -6,9 +6,11 @@
 
 <p>Fast subset, fast grouping, fast assign and fast ordered joins in a short and flexible syntax, for faster development.
 <ul>
-<li><code>DT[X]</code> is a fast join for large data (DT and X both type <code>data.table</code>).</li>
-<li><code>DT[,sum(b*c),by=a]</code> is fast aggregation (a, b and c are column names).</li>
-<li><code>DT[i,b:=3.14]</code> is fast sub-assignment by reference.</li>
+<li><code>DT[X]</code> is a fast join for large data (<code>DT</code> and <code>X</code> both type <code>data.table</code>).</li>
+<li><code>DT[,sum(b*c),by=a]</code> is fast aggregation (<code>a</code>, <code>b</code> and <code>c</code> are column names).</li>
+<li><code>DT[i,b:=3.14]</code> is fast sub-assignment (to column <code>b</code>) by reference.</li>
+</ul></p>
+<ul>
 <li>10+ times faster than <code>tapply()</code></li>
 <li>100+ times faster than <code>==</code></li>
 <li>500+ times faster than <code>DF[i,j]<-value</code></li>
