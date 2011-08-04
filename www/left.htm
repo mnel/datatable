@@ -4,20 +4,22 @@
 <body>
 <h2>Welcome to the data.table project!</h2>
 
-<p>Fast subset, fast grouping and fast ordered joins in a short and flexible syntax, for faster development.
+<p>Fast subset, fast grouping, fast assign and fast ordered joins in a short and flexible syntax, for faster development.
 <ul>
-<li><code>X[Y]</code> is a fast join for large data.</li>
-<li><code>X[,sum(b*c),by=a]</code> is fast aggregation.</li>
+<li><code>DT[X]</code> is a fast join for large data (DT and X both type <code>data.table</code>).</li>
+<li><code>DT[,sum(b*c),by=a]</code> is fast aggregation (a, b and c are column names).</li>
+<li><code>DT[i,b:=3.14]</code> is fast sub-assignment by reference.</li>
 <li>10+ times faster than <code>tapply()</code></li>
 <li>100+ times faster than <code>==</code></li>
+<li>500+ times faster than <code>DF[i,j]<-value</code></li>
 </ul></p>
 
-<p>Latest stable release: <a href="http://cran.r-project.org/package=data.table" target="_top">1.6.2 on CRAN</a></p>
+<p>Latest stable release: <a href="http://cran.r-project.org/package=data.table" target="_top">1.6.3 on CRAN</a></p>
 
-<p><a href="http://www.inside-r.org/packages/cran/data.table" target="_top">User reviews</a> and <a href="http://rwiki.sciviews.org/doku.php?id=packages:cran:data.table" target="_top">data.table wiki</a></p>
+<p><a href="http://crantastic.org/packages/data-table" target="_top">User reviews</a> and <a href="http://rwiki.sciviews.org/doku.php?id=packages:cran:data.table" target="_top">data.table wiki</a></p>
 
 <p>Latest <a href="https://r-forge.r-project.org/scm/viewvc.php/pkg/NEWS?view=markup&root=datatable" target="_top">NEWS</a>
-from <a href="https://r-forge.r-project.org/R/?group_id=240" target="_top">1.6.3 on R-Forge</a> (in development).
+from <a href="https://r-forge.r-project.org/R/?group_id=240" target="_top">1.6.4 on R-Forge</a> (in development).
   Check <a href="https://r-forge.r-project.org/tracker/?group_id=240" target="_top">known bugs and feature requests</a>.</p>
 
 <dl><dt>Vignettes (latest revisions):</dt>
