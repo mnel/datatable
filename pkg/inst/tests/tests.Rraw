@@ -1803,8 +1803,8 @@ test(618, copy(DT)[a>3,r:=sum(b)], DT)
 test(619, copy(DT)[J(-1),r:=sum(b)], DT)
 test(620, copy(DT)[J(-1),r:=sum(b),nomatch=0], DT)
 DT = data.table(x=letters, key="x")
-test(621, copy(DT)[J("bb"), x:="foo"], setkey(copy(DT),NULL))  # even if no update, it should still clear the key for consistency
-test(622, copy(DT)[J("bb"), x:="foo",nomatch=0], setkey(copy(DT),NULL))
+test(621, copy(DT)[J("bb"), x:="foo"], DT)  # when no update, key should be retained
+test(622, copy(DT)[J("bb"), x:="foo",nomatch=0], DT)
 
 set.seed(2)
 DT = data.table(a=rnorm(5)*10, b=1:5)

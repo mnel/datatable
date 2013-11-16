@@ -574,6 +574,14 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
             # Suppress print when returns ok not on error, bug #2376. Thanks to: http://stackoverflow.com/a/13606880/403310
             # All appropriate returns following this point are wrapped i.e. return(suppPrint(x)).
         }
+        # FR #4996 - verbose message and return when a join matches nothing with `:=` in j
+        if (bywithoutby & !notjoin) {
+            # Note: !notjoin is here only until the notjoin is implemented as a "proper" by-without-by
+            if ((all(is.na(f__)) | (all(f__ == 0L) & nomatch == 0L))) {
+                if (verbose) cat("No rows pass i clause so quitting := early with no changes made.\n")
+                return(suppPrint(x))
+            }
+        }
         if (!is.null(irows)) {
             if (!length(irows)) {
                 if (verbose) cat("No rows pass i clause so quitting := early with no changes made.\n")

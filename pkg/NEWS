@@ -132,6 +132,10 @@ NEW FEATURES
   o  as.data.table.*(x, keep.rownames=TRUE), where `x` is a named vector now adds names of `x` into a new column 
      with default name `rn`. Thanks to Garrett See for this FR #2356.
 
+  o  X[Y, col := value] when no match exists in the join is now caught early and X is simply returned. Also a 
+     message when `datatable.verbose` is TRUE is provided. In addition, if `col` is an existing column, since no 
+     update actually takes place, the key is now retained. Thanks to Frank Erickson for reporting this FR #4996..
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
