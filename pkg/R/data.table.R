@@ -1365,10 +1365,14 @@ as.data.table.factor <- as.data.table.ordered <-
 as.data.table.integer <- as.data.table.numeric <- 
 as.data.table.logical <- as.data.table.character <- 
 as.data.table.Date <- function(x, keep.rownames=FALSE) {
-    tt <- deparse(substitute(x))[1]
-    x <- list(x) # <~ is a copy being made here?
+    tt = deparse(substitute(x))[1]
+    nm = names(x)
+    # FR #2356 - transfer names of named vector as "rn" column if required
+    if (keep.rownames & !is.null(nm)) 
+        x <- list(nm, unname(x))
+    else x <- list(x)
     if (tt == make.names(tt))
-        setattr(x, 'names', tt)
+        setattr(x, 'names', c(if (length(x) == 2) "rn", tt))
     as.data.table.list(x, keep.rownames)
 }
 
