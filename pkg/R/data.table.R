@@ -1909,12 +1909,8 @@ setcolorder = function(x,neworder)
 
 set = function(x,i=NULL,j,value)
 {
-    # 1) `set()` should not be able to modify columns by reference (on exisitng columns) 
-    # on a data.frame alone!
-    # 2) since `set()` now can add column by reference, we need to make sure that `x` is a 
-    # data.table. This is done at R-level as `:=` also uses `assign.c` but it's already
-    # checked to get to `[.data.table`. 
-
+    # `set()` should not be able to modify columns by reference (even if it is on exisitng 
+	# columns) on just a data.frame!
     # now check for `j=character` and adding columns then implemented in C
     .Call(Cassign,x,i,j,NULL,value,FALSE) 
     # TO DO: When R itself assigns to char vectors, check a copy is made and 'ul' lost, in tests.Rraw.

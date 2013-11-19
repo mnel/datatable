@@ -274,6 +274,9 @@ BUG FIXES
   o  Fixed bug #5114 where modifying columns in particular cases resulted in ".SD is locked" error. Thanks to GSee for 
      the bug report.
 
+  o  Fixed an issue with `set()` and `:=` not being able to add columns by reference when the object is of class that 
+     inherits from data.table (ex: class = c("myclass", "data.table", "data.frame")). Thanks to GSee for #5115.
+
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.

@@ -3394,10 +3394,21 @@ x <- as.Date(1:5, origin="2013-01-01")
 setattr(x, 'names', letters[1:5])
 test(1144.5, as.data.table(x, keep=TRUE), data.table(rn=names(x), x=unname(x)))
 
-# Fix for bug #5114
+# Fix for bug #5114 - .data.table.locked ISSUE
 DT <- data.table(x=1:5, y=6:10)
 xx <- DT[, .SD, .SDcols="y"]
 test(1145, xx[, y := as.numeric(y)], data.table(y = as.numeric(6:10)))
+
+# Fix for bug #5115 - set not adding columns on class that builds on data.table
+DT <- as.data.table(BOD)
+ans = copy(DT)[, Time := as.numeric(Time)]
+setattr(DT, "class", c("myclass", class(DT)))
+setattr(ans, 'class', class(DT))
+test(1146.1, DT[, Time:= as.numeric(Time)], ans)
+# error on data.frame
+DF <- as.data.frame(DT)
+test(1146.2, set(DF, i=NULL, j=1L, value=seq_len(nrow(DF))), error="Input is not a data.table. set()")
+test(1146.3, set(DF, i=NULL, j="bla", value=seq_len(nrow(DF))), error="Input is not a data.table. set()") # adding new column
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
