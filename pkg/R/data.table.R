@@ -1035,7 +1035,8 @@ is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.
                 setattr(jval, 'sorted', key(x))
             }
         }
-
+        # fix for bug #5114 from GSee's - .data.table.locked=TRUE
+        if (identical(jval, SDenv$.SD)) return(copy(jval))
         return(jval)
     }
     alloc = if (length(len__)) seq_len(max(len__)) else 0L
@@ -1908,8 +1909,14 @@ setcolorder = function(x,neworder)
 
 set = function(x,i=NULL,j,value)
 {
+    # 1) `set()` should not be able to modify columns by reference (on exisitng columns) 
+    # on a data.frame alone!
+    # 2) since `set()` now can add column by reference, we need to make sure that `x` is a 
+    # data.table. This is done at R-level as `:=` also uses `assign.c` but it's already
+    # checked to get to `[.data.table`. 
+
     # now check for `j=character` and adding columns then implemented in C
-    .Call(Cassign,x,i,j,NULL,value,FALSE)   
+    .Call(Cassign,x,i,j,NULL,value,FALSE) 
     # TO DO: When R itself assigns to char vectors, check a copy is made and 'ul' lost, in tests.Rraw.
     # TO DO: When := or set() do it, make them aware of 'ul' and drop it if necessary.
     invisible(x)

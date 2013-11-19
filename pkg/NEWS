@@ -271,6 +271,9 @@ BUG FIXES
      factors resulted in wrong results (and the column not being added). This is now fixed. Thanks to Jonathen Owen 
      for reporting.
 
+  o  Fixed bug #5114 where modifying columns in particular cases resulted in ".SD is locked" error. Thanks to GSee for 
+     the bug report.
+
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.

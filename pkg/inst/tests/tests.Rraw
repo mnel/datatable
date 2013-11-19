@@ -3394,6 +3394,11 @@ x <- as.Date(1:5, origin="2013-01-01")
 setattr(x, 'names', letters[1:5])
 test(1144.5, as.data.table(x, keep=TRUE), data.table(rn=names(x), x=unname(x)))
 
+# Fix for bug #5114
+DT <- data.table(x=1:5, y=6:10)
+xx <- DT[, .SD, .SDcols="y"]
+test(1145, xx[, y := as.numeric(y)], data.table(y = as.numeric(6:10)))
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 
