@@ -136,6 +136,15 @@ NEW FEATURES
      message when `datatable.verbose` is TRUE is provided. In addition, if `col` is an existing column, since no 
      update actually takes place, the key is now retained. Thanks to Frank Erickson for reporting this FR #4996..
 
+  o  Fast radix order is now implemented for 'numeric' type. This is at least 5x times faster than 'regularorder' 
+     in data.table. This would tremendously speed-up all internal operations (including 'setkey', 'unique', 
+     'duplicated').
+
+  o  'duplist' will be deprecated and replaced by 'rleindexlist'. 'rleindexlist' returns a list of length 2, with the 
+     first being the same as the output of 'duplist', and the 2nd the corresponding lengths. Also, there's a ~2.2x 
+     times speed-up for 'duplist' on 'numeric' type. Memory allocation is done efficiently (as in 'dogroups') using 
+     'Realloc' in an incremental fashion.
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now

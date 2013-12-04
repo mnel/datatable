@@ -3412,6 +3412,7 @@ test(1146.3, set(DF, i=NULL, j="bla", value=seq_len(nrow(DF))), error="Input is 
 
 # Feature - implemented fast radix order for numeric types (both +ve and -ve numerics).
 # note that if "x" is already a list, then the values will be modified by reference!
+# Note: 'ordernumtol' doesn't distinguish between NA and NaN whereas this one does!
 x <- rnorm(1e6)
 test(1147.1, order(x), .Call("Cfradix_order", list(x)))
 x <- c(8, NaN, Inf, -7.18918, NA, -7.18918111, -Inf, NA, 5.18909, NaN)
@@ -3436,7 +3437,7 @@ test(1148.2, dcast.data.table(DT, a ~ .), ans1)
 test(1148.3, dcast.data.table(DT, b+a~.), ans2)
 
 # test for `radixorder2` when input is numeric(0)
-test(1149, data.table:::radixorder2(numeric(0)), integer(0))
+test(1149, data.table:::radixorder2(numeric(0)), integer(0)) 
 
 # more tests for `dcast.data.table` with formula being character and errors when formula is a hybrid
 set.seed(1)
@@ -3444,6 +3445,18 @@ x <- data.table(a=rep(1:5, each=5), b=runif(25))
 test(1150.1, dcast.data.table(x, " a~ . ", value.var="b"), data.table(a=1:5, N=5L, key="a"))
 test(1150.2, dcast.data.table(x, "a ~  c ", value.var="b"), error="Column 'c' not found")
 test(1150.3, dcast.data.table(x, a ~  a, value.var="c"), error="'value.var' column 'c' not found")
+
+set.seed(45)
+x <- sample(c(NA, 1:1e5), 1e7, TRUE)
+ox <- data.table:::radixorder2(as.numeric(x))
+o1 <- data.table:::duplist(list(x), ox)
+o2 <- data.table:::rleindexlist(list(x), ox)
+test(1151.1, o1, o2[[1L]])
+test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), o2[[2L]])
+o1 <- data.table:::duplist(list(x))
+o2 <- data.table:::rleindexlist(list(x))
+test(1151.3, o1, o2[[1L]])
+test(1151.4, c(diff(o1), length(x)-tail(o1, 1L)+1L), o2[[2L]])
 
 
 # tests of freading classes like Date and the verbose messages there.
