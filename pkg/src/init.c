@@ -34,6 +34,7 @@ SEXP copyNamedInList();
 SEXP fmelt();
 SEXP fcast();
 SEXP fradix_order();
+SEXP rleindexlist();
 
 // .Externals
 SEXP fastmean();
@@ -68,6 +69,7 @@ R_CallMethodDef callMethods[] = {
 {"Cfmelt", (DL_FUNC) &fmelt, -1}, 
 {"Cfcast", (DL_FUNC) &fcast, -1}, 
 {"Cfradix_order", (DL_FUNC) &fradix_order, -1}, 
+{"Crleindexlist", (DL_FUNC) &rleindexlist, -1},
 {NULL, NULL, 0}
 };
 
