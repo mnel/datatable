@@ -20,8 +20,8 @@ duplist = function(l,order,tolerance=.Machine$double.eps ^ 0.5)
     ans
 }
 
-# Faster duplist - now returns a list with index and length. Doesn't over-allocate result vector.
-rleindexlist <- function (l, order = -1L, tolerance = .Machine$double.eps^0.5) 
+# Faster duplist - now returns a list with index and length. Doesn't over-allocate result vector and is >2x times faster on numeric types
+rlixlist <- function (l, order = -1L, tolerance = .Machine$double.eps^0.5) 
 {
     # Assumes input list is ordered by each list item (or by 'order' if supplied), and that all list elements are the same length
     # Finds the non-duplicate rows.
@@ -32,6 +32,6 @@ rleindexlist <- function (l, order = -1L, tolerance = .Machine$double.eps^0.5)
     if (!is.list(l)) 
         stop("l not type list")
     if (!length(l))  return(list(0L, 0L))
-    ans <- .Call(Crleindexlist, l, as.integer(order), as.numeric(tolerance))
+    ans <- .Call(Crlixlist, l, as.integer(order), as.numeric(tolerance))
     ans
 }

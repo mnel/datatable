@@ -106,8 +106,9 @@ SEXP rorder_tol(SEXP xarg, SEXP indxarg, SEXP tolarg)
     return(R_NilValue);
 }
 
-
-SEXP rleindexlist(SEXP l, SEXP order, SEXP tol)
+// Faster 'duplist' + now it returns the position + length directly as a list. 
+// Also improvements for numeric type with a hack of checking unsigned int (to overcome NA/NaN/Inf/-Inf comparisons) (> 2x speed-up)
+SEXP rlixlist(SEXP l, SEXP order, SEXP tol)
 {
     // Returns a list of 2 elements similar to 'rle' but instead of 'value', 
     // the positions of the non-repeated rows are returned along with lengths.
