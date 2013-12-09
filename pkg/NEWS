@@ -297,6 +297,9 @@ BUG FIXES
      aggregated result. Ex: dcast.data.table(x, a ~ ., mean, value.var="b") - this now returns expected aggregate result.
      This fixes "case 2" of bug report #5149. Thanks to Jakub Szewczyk for reporting.
 
+  o  Implementing FR #4979 lead to a bug when grouping with .SDcols, where .SDcols argument was variable name. This bug #5190 
+     is now fixed.
+
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.
