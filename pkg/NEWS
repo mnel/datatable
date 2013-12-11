@@ -300,6 +300,9 @@ BUG FIXES
   o  Implementing FR #4979 lead to a bug when grouping with .SDcols, where .SDcols argument was variable name. This bug #5190 
      is now fixed.
 
+  o  Fixed #5171 - where setting the attribute name to a non-character type resulted in a segfault. Ex: 
+     `setattr(x, FALSE, FALSE); x`. Now ends up with a friendly error.
+
 NOTES
 
   o  If fread ignores colClasses, the message is upgraded to warning instead of just a line in verbose=TRUE mode.

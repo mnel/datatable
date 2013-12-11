@@ -3470,6 +3470,13 @@ dt = data.table(grp = sample(letters[1:3],20, replace = TRUE), v1 = rnorm(20), v
 sd.cols <- "v1"
 test(1152, dt[, lapply(.SD, mean), by=grp, .SDcols=sd.cols], dt[, list(v1=mean(v1)), by=grp])
 
+# #5171 fix - setattr attribute non-character led to segfault
+x <- FALSE
+if ("package:bit" %in% search()) {
+    try(detach(package:bit64),silent=TRUE)
+    try(detach(package:bit),silent=TRUE)
+    test(1153, data.table:::setattr(x, FALSE, FALSE), error="Attribute name must be")
+}
 
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
