@@ -8,6 +8,7 @@
 int sizes[100];
 #define SIZEOF(x) sizes[TYPEOF(x)]
 
+// Fixes #5150
 // a simple check for R version to decide if the type should be R_len_t or R_xlen_t
 // long vector support was added in R 3.0.0
 #if defined(R_VERSION) && R_VERSION >= R_Version(3, 0, 0)
