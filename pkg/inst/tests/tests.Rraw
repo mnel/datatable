@@ -3452,18 +3452,18 @@ test(1150.1, dcast.data.table(x, " a~ . ", value.var="b"), data.table(a=1:5, N=5
 test(1150.2, dcast.data.table(x, "a ~  c ", value.var="b"), error="Column 'c' not found")
 test(1150.3, dcast.data.table(x, a ~  a, value.var="c"), error="'value.var' column 'c' not found")
 
-# testing equivalence of duplist and rlixlist
+# testing equivalence of duplist and uniqlist
 set.seed(45)
 x <- sample(c(NA_integer_, 1:1e5), 1e7, TRUE)
 ox <- data.table:::iradixorder(x)
 o1 <- data.table:::duplist(list(x), ox)
-o2 <- data.table:::rlixlist(list(x), ox)
-test(1151.1, o1, o2[[1L]])
-test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), o2[[2L]])
+o2 <- data.table:::uniqlist(list(x), ox)
+test(1151.1, o1, o2)
+test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), data.table:::uniqlengths(o2, length(x)))
 o1 <- data.table:::duplist(list(x))
-o2 <- data.table:::rlixlist(list(x))
-test(1151.3, o1, o2[[1L]])
-test(1151.4, c(diff(o1), length(x)-tail(o1, 1L)+1L), o2[[2L]])
+o2 <- data.table:::uniqlist(list(x))
+test(1151.3, o1, o2)
+test(1151.4, c(diff(o1), length(x)-tail(o1, 1L)+1L), data.table:::uniqlengths(o2, length(x)))
 
 # #5190 fix - grouping with .SDcols gave "symbol not subsettable error" - consequence of FR #4979 implementation
 dt = data.table(grp = sample(letters[1:3],20, replace = TRUE), v1 = rnorm(20), v2 = rnorm(20))
