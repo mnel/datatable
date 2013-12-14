@@ -155,6 +155,9 @@ NEW FEATURES
 
   o  Binary search is now capable of subsetting NA/NaNs and also perform joins and merges by matching NAs/NaNs.
 
+  o  Fast radix order for int and double gains a new 'decreasing = TRUE/FALSE' argument, which allows it to order or sort 
+     in descending order as well (to be used to replace 'order' to 'fastorder' in 'i').
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
