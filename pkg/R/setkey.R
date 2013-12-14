@@ -80,9 +80,10 @@ radixorder1 <- function(x) {
 # 1) works for any data size - not restricted like R's radix where max-min should be <= 1e5 
 # 2) with any values => also works on -ve integers, NA
 # 3) directly returns sort value instead of sort order by setting last parameter in C function to FALSE (not accessible via iradixorder)
-iradixorder <- function(x) {
+iradixorder <- function(x, decreasing=FALSE) {
     # copied from radixorder1 and just changed the call to the correct function
-	# xtfrm converts date object to numeric. but this will be called only if it's integer, so do a as.integer(.)
+    # xtfrm converts date object to numeric. but this will be called only if it's integer, so do a as.integer(.)
+    if (is.na(decreasing) || !is.logical(decreasing)) stop("Argument 'decreasing' to 'iradixorder' must be logical TRUE/FALSE")
     if(is.object(x)) x = as.integer(xtfrm(x))
     if(typeof(x) == "logical") 
         return(c(which(is.na(x)), which(!x), which(x)))
@@ -90,7 +91,7 @@ iradixorder <- function(x) {
         stop("iradixorder is only for integer 'x'. Try dradixorder for numeric 'x'")
     if (length(x) == 0L) return(integer(0))
     # passing list(x) to C to ensure copy is being made...
-    ans <- .Call(Cfastradixint, list(x), TRUE) # if FALSE returns sort value instead of indices
+    ans <- .Call(Cfastradixint, list(x), TRUE, decreasing) # first TRUE returns indices, if FALSE returns value. Second is decreasing=FALSE - ascending order
     ans
     # NA first as data.table requires
 }
@@ -98,11 +99,12 @@ iradixorder <- function(x) {
 # FOR INTERNAL use only. Use at your own risk (values are changed by reference if not used properly)
 # at least > 5-30x times faster than ordernumtol and order (depending on the number of groups to find the tolerance on)
 # real-life performances must be towards the much faster side though.
-dradixorder <- function(x, tol=.Machine$double.eps^0.5) {
+dradixorder <- function(x, tol=.Machine$double.eps^0.5, decreasing=FALSE) {
     if (!is.atomic(x) || typeof(x) != "double") stop("'dradixorder' is only numeric 'x'. Try iradixorder for integer 'x'")
+    if (is.na(decreasing) || !is.logical(decreasing)) stop("Argument 'decreasing' to 'dradixorder' must be logical TRUE/FALSE")
     if (length(x) == 0) return(integer(0))
     # passing list(x) to C to ensure copy is being made...
-    ans <- .Call(Cfastradixdouble, list(x), as.numeric(tol), TRUE) # FALSE returns sort value instead of sort order
+    ans <- .Call(Cfastradixdouble, list(x), as.numeric(tol), TRUE, decreasing) # TRUE returns order, FALSE returns sorted vec.
     ans
     # NA first followed by NaN next as data.table requires
 }
