@@ -153,6 +153,8 @@ NEW FEATURES
      faster (tested on 1e7 rows) than 1.8.10. And therefore `unique.data.table` is as well. To contrast, after this 
      enhancement, it takes 4.2 and 5.7 seconds on 1e3 and 1e7 unique values.
 
+  o  Binary search is now capable of subsetting NA/NaNs and also perform joins and merges by matching NAs/NaNs.
+
 BUG FIXES
 
   o  If fread returns a data error (such as unbalanced quotes on a particular line) it now
@@ -303,6 +305,9 @@ BUG FIXES
 
   o  Fixed #5171 - where setting the attribute name to a non-character type resulted in a segfault. Ex: 
      `setattr(x, FALSE, FALSE); x`. Now ends up with a friendly error.
+
+  o  A consequence of implementing the feature where binary search based subsetting or joins/merges is capable of also 
+     handling NAs/NaNs is that bug #4918 is fixed. Thanks to Sameer Manek for reporting.
 
 NOTES
 
