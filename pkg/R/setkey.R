@@ -131,7 +131,7 @@ fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.ve
         "character" = chorder(v),
         # Use a radix sort (fast and stable for ties), but will fail for range > 1e5 elements (and any negatives)
         tryCatch(radixorder1(v),error=function(e) {
-            if (verbose) cat("First column",w,"failed radixorder1, reverting to regularorder1\n")
+            if (verbose) cat("First column",w,"failed radixorder1, reverting to 'iradixorder'\n")
             iradixorder(v) # regularorder1(v)
         })
     )
@@ -142,7 +142,7 @@ fastorder <- function(lst, which=seq_along(lst), verbose=getOption("datatable.ve
             "double" = o[dradixorder(v[o])], # o[ordernumtol(v[o])],   # o was changed by reference by ordernumtol, and returned too, but couldn't get it stable within ties (tests now cover the cases).  TO DO: try again another time
             "character" = o[chorder(v[o])],   # TO DO: avoid the copy and reorder, pass in o to C like ordernumtol
             tryCatch(o[radixorder1(v[o])], error=function(e) {
-                if (verbose) cat("Non-first column",w,"failed radixorder1, reverting to regularorder1\n")
+                if (verbose) cat("Non-first column",w,"failed radixorder1, reverting to 'iradixorder'\n")
                 o[iradixorder(v[o])] # o[regularorder1(v[o])]    # TO DO: avoid the copy and reorder, pass in o to C like ordernumtol
             })
         )
