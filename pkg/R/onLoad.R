@@ -1,15 +1,15 @@
 .onLoad <- function(libname, pkgname) {
     # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
     
-    "Please read FAQ 2.23 (vignette('datatable-faq')) which explains in detail why data.table adds one line to base::cbind.data.frame and base::rbind.data.frame. If there is a better solution we will gladly change it."
-    # Commented as a character string so this message is retained and seen by anyone who types data.table:::.onAttach
+    "Please read FAQ 2.23 (vignette('datatable-faq')) which explains in detail why data.table adds one for loop to the start of base::cbind.data.frame and base::rbind.data.frame. If there is a better solution we will gladly change it."
+    # Commented as a character string so this message is retained and seen by anyone who types data.table:::.onLoad
     tt = base::cbind.data.frame
     ss = body(tt)
     if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
     prefix = if (!missing(pkgname)) "data.table::" else ""  # R provides the arguments when it calls .onLoad, I don't in dev/test
     if (!length(grep("data.table",ss[[2]]))) {
         ss = ss[c(1,NA,2:length(ss))]
-        ss[[2]] = parse(text=paste("for (ii in list(...)) { if (inherits(ii,'data.table')) return(",prefix,"data.table(...)) }",sep=""))[[1]]
+        ss[[2]] = parse(text=paste("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,"data.table(...)) }",sep=""))[[1]]
         body(tt)=ss
         (unlockBinding)("cbind.data.frame",baseenv())
         assign("cbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
@@ -20,7 +20,7 @@
     if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
     if (!length(grep("data.table",ss[[2]]))) {
         ss = ss[c(1,NA,2:length(ss))]
-        ss[[2]] = parse(text=paste("for (ii in list(...)) { if (inherits(ii,'data.table')) return(",prefix,".rbind.data.table(...)) }",sep=""))[[1]] # fix for #4995
+        ss[[2]] = parse(text=paste("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }",sep=""))[[1]] # fix for #4995
         body(tt)=ss
         (unlockBinding)("rbind.data.frame",baseenv())
         assign("rbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
