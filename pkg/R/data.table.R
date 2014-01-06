@@ -296,9 +296,13 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
     alloc.col(value)  # returns a NAMED==0 object, unlike data.frame()
 }
 
-is.sorted = function(x){identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.na(x))}
+is.sorted = function(x) {
+    if (is.list(x)) .Call(CisSortedList, x, sqrt(.Machine$double.eps))
+    else identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.na(x))
+}
 # NA's anywhere need to result in 'not sorted' e.g. test 251 where i table is not sorted but f__ without NAs is sorted. Could check if i is sorted too, but that would take time and that's what SJ is for to make the calling code clear to the reader.
 # Extra logic after && is now needed to maintain backwards compatibility after r-devel's change of is.unsorted(NA) to FALSE (was NA) [May 2013].
+# TO DO: base::is.unsorted calls any(is.na(x)), could avoid by always using CisSortedList
 
 .massagei = function(x) {
     if (is.call(x) && as.character(x[[1L]]) %chin% c("J","."))
@@ -1901,9 +1905,9 @@ setnames = function(x,old,new) {
     } else {
         if (!is.character(old)) stop("'old' is type ",typeof(old)," but should be integer, double or character")
         if (any(duplicated(old))) stop("Some duplicates exist in 'old': ", paste(old[duplicated(old)],collapse=","))
-        if (any(duplicated(names(x)))) stop("'old' is character but there are duplicate column names: ",paste(names(x)[duplicated(names(x))],collapse=","))
         i = chmatch(old,names(x))
         if (any(is.na(i))) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
+        if (any(tt<-!is.na(chmatch(old,names(x)[-i])))) stop("Some items of 'old' are duplicated (ambiguous) in column names: ",paste(old[tt],collapse=","))
     }
     if (!is.character(new)) stop("'new' is not a character vector")
     if (length(names(x)) != length(x)) stop("dt is length ",length(dt)," but its names are length ",length(names(x)))
