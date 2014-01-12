@@ -3620,6 +3620,30 @@ test(1160.6, y, x)
 x <- list(1:10)
 test(1160.7, setrev(x), error="Input 'x' must be a vector")
 
+# tests for setreordervec
+if (!.devtesting) {
+    setreordervec <- data.table:::setreordervec
+}
+# integer
+x <- sample(c(-10:10, NA), 100, TRUE)
+o <- order(x, na.last=FALSE) # using base order here
+y <- copy(x)
+setreordervec(y, o)
+test(1161.1, x[o], y)
+# numeric
+x <- sample(c(NA, rnorm(10)), 100, TRUE)
+o <- order(x, na.last=FALSE)
+y <- copy(x)
+setreordervec(y, o)
+test(1161.2, x[o], y)
+# character
+x <- sample(c(NA, letters), 100, TRUE)
+o <- order(x, na.last=FALSE)
+y <- copy(x)
+setreordervec(y, o)
+test(1161.3, x[o], y)
+
+
 # tests of freading classes like Date and the verbose messages there.
 # Test mid read bump of logical T/F to character, collapse back to T and F.
 
